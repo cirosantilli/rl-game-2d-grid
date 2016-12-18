@@ -131,11 +131,11 @@ void World::init() {
         createSolidTexture(0, COLOR_MAX / 2, COLOR_MAX, 0);
     }
 
-    if (this->scenario == "food") {
+    if (this->scenario == "plants") {
         this->createSingleTextureObject(
             this->getWidth() / 2,
             this->getHeight() / 2,
-            Object::Type::HUMAN,
+            Object::Type::PLANT_EATER,
             std::make_unique<HumanActor>(),
             fov,
             0
@@ -155,7 +155,7 @@ void World::init() {
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (std::rand() % 3 == 0 && this->isTileEmpty(x, y)) {
-                    this->createSingleTextureObject(x, y, Object::Type::FOOD, std::make_unique<DoNothingActor>(), 0, 2);
+                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 2);
                 }
             }
         }
@@ -244,30 +244,49 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             action = actor.act(*createWorldView(*object));
         }
 
+        auto x = object->getX();
+        auto y = object->getY();
+
         // X
         if (action.getMoveX() == Action::MoveX::LEFT) {
-            auto x = object->getX();
             if (x > 0) {
-                object->setX(x - 1);
+                x--;
             }
         } else if (action.getMoveX() == Action::MoveX::RIGHT) {
-            auto x = object->getX();
             if (x < this->getWidth() - 1) {
-                object->setX(x + 1);
+                x++;
             }
         }
 
         // Y
         if (action.getMoveY() == Action::MoveY::UP) {
-            auto y = object->getY();
             if (y < this->getHeight() - 1) {
-                object->setY(y + 1);
+                y++;
             }
         } else if (action.getMoveY() == Action::MoveY::DOWN) {
-            auto y = object->getY();
             if (y > 0) {
-                object->setY(y - 1);
+                y--;
             }
+        }
+
+        Object *objectAtTarget = NULL;
+        bool tileNonEmpty = this->findObjectAtTile(objectAtTarget, x, y);
+        bool shouldMove = false;
+        if (tileNonEmpty) {
+            auto objectType = object->getType();
+            auto targetType = objectAtTarget->getType();
+            if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
+                shouldMove = true;
+                object->setScore(object->getScore() + 1);
+                std::cout << object->getScore() << std::endl;
+                // TODO remove plant. Requires conversion to map.
+            }
+        } else {
+            shouldMove = true;
+        }
+        if (shouldMove) {
+            object->setX(x);
+            object->setY(y);
         }
     }
 }
@@ -339,10 +358,21 @@ bool World::findNextObjectInRectangle(
     return false;
 }
 
+bool World::findObjectAtTile(Object*& object, unsigned int x, unsigned int y) const {
+    auto it = this->objects.begin();
+    int dx, dy;
+    bool ret = this->findNextObjectInRectangle(it, x, y, 1, 1, dx, dy);
+    if (ret) {
+        object = it->get();
+    }
+    return ret;
+}
+
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {
     auto it = this->objects.begin();
     int dx, dy;
-    return !this->findNextObjectInRectangle(it, x, y, 1, 1, dx, dy);
+    Object *object;
+    return !this->findObjectAtTile(object, x, y);
 }
 
 std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {

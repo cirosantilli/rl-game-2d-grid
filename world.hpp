@@ -96,6 +96,10 @@ class World {
             int& dx,
             int& dy
         ) const;
+        /// Make object point to the object at a given tile.
+        /// If an object is present at that position, return true.
+        /// Otherwise, return false otherwise, and do not mofify object.
+        bool findObjectAtTile(Object*& object, unsigned int x, unsigned int y) const;
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
         /// Should we only show the FOV for a single object on screen? Or show every object?

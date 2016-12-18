@@ -18,3 +18,4 @@
 -   draw grids to screen
 -   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
 -   more human understandable textures (?) This allows human to cheat by using external world knowledge. Possibly use random letters as textures? 
+-   advance world if `-H -f 2.0` and some key is being held at the end.

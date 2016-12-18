@@ -11,14 +11,15 @@
 class ObjectView {
     public:
         ObjectView(int x, int y, Object::Type type);
-        int getScore() const;
         int getX() const;
         int getY() const;
         Object::Type getType() const;
     private:
         int x;
         int y;
-        unsigned int score;
+        // Players can see their score, but not change it directly.
+        // TODO there is a Sheakespeare quote about thinking about a banquet
+        // and how thoughts cannot fulfill physical needs.
         Object::Type type;
 };
 

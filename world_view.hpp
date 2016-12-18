@@ -13,10 +13,12 @@ class WorldView {
         WorldView(unsigned int width, unsigned int height, std::unique_ptr<std::vector<std::unique_ptr<ObjectView>>> objectViews);
         unsigned int getHeight() const;
         const std::vector<std::unique_ptr<ObjectView>>& getObjectViews() const;
+        unsigned int getScore() const;
         unsigned int getWidth() const;
     private:
-        unsigned int width;
         unsigned int height;
+        unsigned int score;
+        unsigned int width;
         std::unique_ptr<std::vector<std::unique_ptr<ObjectView>>> objectViews;
 };
 
