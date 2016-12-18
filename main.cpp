@@ -1,37 +1,5 @@
 /*
-2D tile-based game world, made for programmable AIs to compete.
-
-https://en.wikipedia.org/wiki/Tile-based_video_game
-
-## TODO
-
--   implement one type of score
--   use protobuf serialization for full world state, controller world view, and controller actions
--   put players in separate processes, and control resources:
-    - time
-    - RAM
-    - disk: loopback + seccomp should suffice
-    But hopefully allow for access to:
-    - threading
-    - GPU (TODO how to enforce fair resource sharing of GPU shaders?)
-    Should we use raw seccomp, or a more full blown docker?
--   use quadtree (same as B-tree width width 4?) for searches.
-    Boost geometry has some classes: http://www.boost.org/doc/libs/1_58_0/libs/geometry/doc/html/geometry/spatial_indexes/introduction.html
-    R-tree is even more efficient as it is not restricted to halves only.
--   redo previous human action
--   pause
--   draw grids to screen
--   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
-
-## Testing:
-
-- no options
-- -i
-- -b -f 2.0 -i
-- -H -b -f 2.0 -i
-- -H -b -f 2.0
-- -m
-- -i -m
+This file deals with
 */
 
 #include <cstdlib>
@@ -160,6 +128,9 @@ static void printHelp() {
         "                 In particular, it becomes difficult to press multiple simultaneous\n"
         "                 keys consistently.\n"
         "\n"
+        "- `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way to show\n"
+        "                 scenario list here. For now read source\n"
+        "\n"
         "- `-v <int>`:    (View player) Only show what the int-th player is seeing on screen,\n"
         "                 limited by its field of view.\n"
         "\n"
@@ -274,6 +245,7 @@ int main(int argc, char **argv) {
         limitFps = false,
         printFps = true
     ;
+    std::string scenario;
     double
         targetFps = 1.0,
         last_time;
@@ -313,6 +285,8 @@ int main(int argc, char **argv) {
             } else if (std::strcmp(argv[i], "-r") == 0) {
                 randomSeed = std::strtol(argv[i + 1], NULL, 10);
                 fixedRandomSeed = true;
+            } else if (std::strcmp(argv[i], "-s") == 0) {
+                scenario = argv[i + 1];
             } else if (std::strcmp(argv[i], "-w") == 0) {
                 width = std::strtol(argv[i + 1], NULL, 10);
 
@@ -341,7 +315,8 @@ int main(int argc, char **argv) {
         showFovId,
         fixedRandomSeed,
         randomSeed,
-        multiHumanPlayer
+        multiHumanPlayer,
+        std::move(scenario)
     );
 main_loop:
     if (printFps) {

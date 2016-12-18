@@ -11,12 +11,14 @@
 class ObjectView {
     public:
         ObjectView(int x, int y, Object::Type type);
+        int getScore() const;
         int getX() const;
         int getY() const;
         Object::Type getType() const;
     private:
         int x;
         int y;
+        unsigned int score;
         Object::Type type;
 };
 

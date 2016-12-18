@@ -3,6 +3,7 @@
 
 #include <ctime>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -24,7 +25,8 @@ class World {
             int showFovId,
             bool fixedRandomSeed,
             int randomSeed,
-            bool multiHumanPlayer
+            bool multiHumanPlayer,
+            std::string scenario
         );
         ~World();
         void draw() const;
@@ -54,6 +56,7 @@ class World {
             showFovId,
             randomSeed
         ;
+        std::string scenario;
         unsigned int
             height,
             nHumanActions,
@@ -70,13 +73,7 @@ class World {
         std::vector<SDL_Texture *> textures;
 
         // Private methods.
-        /// Should we only show the FOV for a single object on screen? Or show every object?
-        bool showFov() const;
         SDL_Texture * createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a);
-        /// Advance iterator until the next object in the FOV of object, including it itself.
-        /// Return true if such object exists, false if there are no more.
-        /// The caller is responsible for incrementing the pointer to ask for the next object.
-        bool findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iterator& it, const Object& object, int& dx, int& dy) const;
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
         void createSingleTextureObject(
             unsigned int x,
@@ -86,6 +83,23 @@ class World {
             unsigned int fov,
             size_t textureId
         );
+        bool findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iterator& it, const Object& object, int& dx, int& dy) const;
+        /// Advance iterator until the next object in the FOV of object, including it itself.
+        /// Return true if such object exists, false if there are no more.
+        /// The caller is responsible for incrementing the pointer to ask for the next object.
+        bool findNextObjectInRectangle(
+            std::vector<std::unique_ptr<Object>>::const_iterator& it,
+            unsigned int centerX,
+            unsigned int centerY,
+            unsigned int width,
+            unsigned int height,
+            int& dx,
+            int& dy
+        ) const;
+        /// Check if a given tile is empty.
+        bool isTileEmpty(unsigned int x, unsigned int y) const;
+        /// Should we only show the FOV for a single object on screen? Or show every object?
+        bool showFov() const;
 
         // Static const private.
         static const unsigned int COLOR_MAX = 255;

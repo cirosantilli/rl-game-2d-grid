@@ -17,7 +17,9 @@ class Object {
             RANDOM,
             FOLLOW_HUMAN,
             FLEE_HUMAN,
-            HUMAN
+            HUMAN,
+            WALL,
+            FOOD
         };
         Object();
         virtual ~Object();

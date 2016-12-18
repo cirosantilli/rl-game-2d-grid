@@ -1,7 +1,8 @@
 #include "object_view.hpp"
 
 ObjectView::ObjectView(int x, int y, Object::Type type)
-    : x(x), y(y), type(type) {}
+    : x(x), y(y), type(type), score(0) {}
+int ObjectView::getScore() const { return this->score; }
 int ObjectView::getX() const { return this->x; }
 int ObjectView::getY() const { return this->y; }
 Object::Type ObjectView::getType() const { return this->type; }

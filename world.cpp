@@ -27,7 +27,8 @@ World::World(
     int showFovId,
     bool fixedRandomSeed,
     int randomSeed,
-    bool multiHumanPlayer
+    bool multiHumanPlayer,
+    std::string scenario
 ) :
     width(width),
     height(height),
@@ -37,7 +38,8 @@ World::World(
     showFovId(showFovId),
     fixedRandomSeed(fixedRandomSeed),
     randomSeed(randomSeed),
-    multiHumanPlayer(multiHumanPlayer)
+    multiHumanPlayer(multiHumanPlayer),
+    scenario(std::move(scenario))
 {
     this->window = NULL;
     this->renderer = NULL;
@@ -100,7 +102,8 @@ void World::init() {
     std::srand(this->randomSeed);
 
     this->nHumanActions = 0;
-    unsigned int fov = std::min(this->getWidth(), this->getHeight()) / 2;
+    unsigned int fov = 5;
+    //unsigned int fov = std::min(this->getWidth(), this->getHeight()) / 2;
 
     // Setup textures. Depends on fov if we are watching an object.
     if (this->display) {
@@ -128,64 +131,94 @@ void World::init() {
         createSolidTexture(0, COLOR_MAX / 2, COLOR_MAX, 0);
     }
 
-    // Place objects.
-    this->createSingleTextureObject(
-        this->getWidth() / 2,
-        this->getHeight() / 2,
-        Object::Type::HUMAN,
-        std::make_unique<HumanActor>(),
-        fov,
-        0
-    );
-    if (this->multiHumanPlayer) {
+    if (this->scenario == "food") {
         this->createSingleTextureObject(
-            (this->getWidth() / 2) + 1,
-            (this->getHeight() / 2) + 1,
+            this->getWidth() / 2,
+            this->getHeight() / 2,
             Object::Type::HUMAN,
             std::make_unique<HumanActor>(),
             fov,
-            1
+            0
         );
-    }
-    this->createSingleTextureObject(
-        this->getWidth() / 4,
-        this->getHeight() / 4,
-        Object::Type::RANDOM,
-        std::make_unique<RandomActor>(),
-        fov,
-        2
-    );
-    this->createSingleTextureObject(
-        3 * this->getWidth() / 4,
-        this->getHeight() / 4,
-        Object::Type::FOLLOW_HUMAN,
-        std::make_unique<FollowHumanActor>(),
-        fov,
-        3
-    );
-    this->createSingleTextureObject(
-        3 * this->getWidth() / 4,
-        3 * this->getHeight() / 4,
-        Object::Type::FLEE_HUMAN,
-        std::make_unique<FleeHumanActor>(),
-        fov,
-        4
-    );
-    this->createSingleTextureObject(
-        this->getWidth() / 4,
-        3 * this->getHeight() / 4,
-        Object::Type::DO_NOTHING,
-        std::make_unique<DoNothingActor>(),
-        fov,
-        5
-    );
-    for (unsigned int y = 0; y < this->height; ++y) {
+
+        // Walls closing off the scenario borders. .
+        for (unsigned int y = 0; y < this->height; ++y) {
+            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+        }
         for (unsigned int x = 0; x < this->width; ++x) {
-            unsigned int sum = x + y;
-            if (sum % 5 == 0) {
-                this->createSingleTextureObject(x, y, Object::Type::MOVE_UP, std::make_unique<MoveUpActor>(), fov, 6);
-            } else if (sum % 7 == 0) {
-                this->createSingleTextureObject(x, y, Object::Type::MOVE_DOWN, std::make_unique<MoveDownActor>(), fov, 7);
+            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+        }
+
+        // Randomly placed food in the center.
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (std::rand() % 3 == 0 && this->isTileEmpty(x, y)) {
+                    this->createSingleTextureObject(x, y, Object::Type::FOOD, std::make_unique<DoNothingActor>(), 0, 2);
+                }
+            }
+        }
+    } else {
+        // Place objects.
+        this->createSingleTextureObject(
+            this->getWidth() / 2,
+            this->getHeight() / 2,
+            Object::Type::HUMAN,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        if (this->multiHumanPlayer) {
+            this->createSingleTextureObject(
+                (this->getWidth() / 2) + 1,
+                (this->getHeight() / 2) + 1,
+                Object::Type::HUMAN,
+                std::make_unique<HumanActor>(),
+                fov,
+                1
+            );
+        }
+        this->createSingleTextureObject(
+            this->getWidth() / 4,
+            this->getHeight() / 4,
+            Object::Type::RANDOM,
+            std::make_unique<RandomActor>(),
+            0,
+            2
+        );
+        this->createSingleTextureObject(
+            3 * this->getWidth() / 4,
+            this->getHeight() / 4,
+            Object::Type::FOLLOW_HUMAN,
+            std::make_unique<FollowHumanActor>(),
+            fov,
+            3
+        );
+        this->createSingleTextureObject(
+            3 * this->getWidth() / 4,
+            3 * this->getHeight() / 4,
+            Object::Type::FLEE_HUMAN,
+            std::make_unique<FleeHumanActor>(),
+            fov,
+            4
+        );
+        this->createSingleTextureObject(
+            this->getWidth() / 4,
+            3 * this->getHeight() / 4,
+            Object::Type::DO_NOTHING,
+            std::make_unique<DoNothingActor>(),
+            0,
+            5
+        );
+        for (unsigned int y = 0; y < this->height; ++y) {
+            for (unsigned int x = 0; x < this->width; ++x) {
+                unsigned int sum = x + y;
+                if (sum % 5 == 0) {
+                    this->createSingleTextureObject(x, y, Object::Type::MOVE_UP, std::make_unique<MoveUpActor>(), fov, 6);
+                } else if (sum % 7 == 0) {
+                    this->createSingleTextureObject(x, y, Object::Type::MOVE_DOWN, std::make_unique<MoveDownActor>(), fov, 7);
+                }
             }
         }
     }
@@ -271,19 +304,45 @@ SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned
 }
 
 bool World::findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iterator& it, const Object& object, int& dx, int& dy) const {
+    return this->findNextObjectInRectangle(
+        it,
+        object.getX(),
+        object.getY(),
+        object.getFov(),
+        object.getFov(),
+        dx,
+        dy
+    );
+}
+
+bool World::findNextObjectInRectangle(
+    std::vector<std::unique_ptr<Object>>::const_iterator& it,
+    unsigned int centerX,
+    unsigned int centerY,
+    unsigned int width,
+    unsigned int height,
+    int& dx,
+    int& dy
+) const {
     // TODO: use quadtree
     auto const end = this->objects.end();
     while (it != end) {
-        auto const& otherObject = **it;
-        dx = (int)otherObject.getX() - (int)object.getX();
-        dy = (int)otherObject.getY() - (int)object.getY();
+        auto const& object = **it;
+        dx = (int)object.getX() - (int)centerX;
+        dy = (int)object.getY() - (int)centerY;
         int fov = object.getFov();
-        if (std::abs(dx) < fov && std::abs(dy) < fov) {
+        if (std::abs(dx) < (int)width && std::abs(dy) < (int)height) {
             return true;
         }
         it++;
     }
     return false;
+}
+
+bool World::isTileEmpty(unsigned int x, unsigned int y) const {
+    auto it = this->objects.begin();
+    int dx, dy;
+    return !this->findNextObjectInRectangle(it, x, y, 1, 1, dx, dy);
 }
 
 std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
