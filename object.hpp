@@ -43,13 +43,15 @@ class Object {
         void setX(unsigned int x);
         void setY(unsigned int y);
     protected:
-        unsigned int fov;
-        unsigned int score;
-        unsigned int x;
-        unsigned int y;
         std::unique_ptr<Actor> actor;
-        Type type;
         std::unique_ptr<DrawableObject> drawableObject;
+        Type type;
+        unsigned int
+            fov,
+            score,
+            x,
+            y
+        ;
 };
 
 std::ostream& operator<<(std::ostream& os, const Object& o);

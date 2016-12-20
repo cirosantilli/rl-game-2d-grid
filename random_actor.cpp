@@ -3,7 +3,7 @@
 #include "action.hpp"
 #include "random_actor.hpp"
 
-Action RandomActor::act(const WorldView &worldView) {
+Action RandomActor::act(const WorldView&) {
     Action::MoveX x;
     Action::MoveY y;
     switch (std::rand() % 3) {

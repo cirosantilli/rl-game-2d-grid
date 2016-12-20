@@ -2,27 +2,30 @@
 
 O ?= 0
 STD ?= c++14
-CCC ?= g++ -ggdb3 -pedantic-errors -std=$(STD) -O$(O) -Wextra
+CCC ?= g++ -MMD -ggdb3 -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
+DEP_EXT ?= .d
 IN_EXT ?= .cpp
 LIBS ?= -lm -lSDL2
+OBJ_EXT ?= .o
 OUT_EXT ?= .out
 RUN ?= main
-OBJ_EXT ?= .o
 
 INS := $(wildcard *$(IN_EXT))
-OUTS := $(INS:$(IN_EXT)=$(OBJ_EXT))
+OBJS := $(INS:$(IN_EXT)=$(OBJ_EXT))
 RUN_BASENAME := $(RUN)$(OUT_EXT)
 
 .PHONY: clean run
 
-$(RUN_BASENAME): $(OUTS)
+$(RUN_BASENAME): $(OBJS)
 	$(CCC) -o '$@' $+ $(LIBS)
+
+-include $(OBJS:$(OBJ_EXT)=$(DEP_EXT))
 
 %$(OBJ_EXT): %$(IN_EXT)
 	$(CCC) -c '$<' -o '$@'
 
 clean:
-	rm -f *'$(OBJ_EXT)' '$(RUN_BASENAME)'
+	rm -f *'$(DEP_EXT)' *'$(OBJ_EXT)' '$(RUN_BASENAME)'
 
 run: $(RUN_BASENAME)
 	./'$(RUN_BASENAME)'

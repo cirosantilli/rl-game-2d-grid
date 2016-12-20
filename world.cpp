@@ -30,16 +30,16 @@ World::World(
     bool multiHumanPlayer,
     std::string scenario
 ) :
-    width(width),
-    height(height),
     display(display),
-    windowWidthPix(windowWidthPix),
-    windowHeightPix(windowHeightPix),
-    showFovId(showFovId),
     fixedRandomSeed(fixedRandomSeed),
-    randomSeed(randomSeed),
     multiHumanPlayer(multiHumanPlayer),
-    scenario(std::move(scenario))
+    randomSeed(randomSeed),
+    showFovId(showFovId),
+    scenario(std::move(scenario)),
+    height(height),
+    width(width),
+    windowHeightPix(windowHeightPix),
+    windowWidthPix(windowWidthPix)
 {
     this->window = NULL;
     this->renderer = NULL;
@@ -62,9 +62,7 @@ World::~World() {
 }
 
 void World::draw() const {
-    int dx, dy;
     if (this->display) {
-        Uint8 *base;
         SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 0);
         SDL_RenderClear(this->renderer);
         auto it = this->objects.begin();
@@ -294,7 +292,6 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
 unsigned int World::getHeight() const { return this->height; }
 unsigned int World::getNHumanActions() const { return this->nHumanActions; }
 
-const std::vector<std::unique_ptr<Object>>& World::getObjects() const { return this->objects; }
 SDL_Renderer * World::getRenderer() const { return this->renderer; }
 unsigned int World::getTileHeightPix() const { return this->tileHeightPix; }
 unsigned int World::getTileWidthPix() const { return this->tileWidthPix; }
@@ -349,7 +346,6 @@ bool World::findNextObjectInRectangle(
         auto const& object = **it;
         dx = (int)object.getX() - (int)centerX;
         dy = (int)object.getY() - (int)centerY;
-        int fov = object.getFov();
         if (std::abs(dx) < (int)width && std::abs(dy) < (int)height) {
             return true;
         }
@@ -369,8 +365,6 @@ bool World::findObjectAtTile(Object*& object, unsigned int x, unsigned int y) co
 }
 
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {
-    auto it = this->objects.begin();
-    int dx, dy;
     Object *object;
     return !this->findObjectAtTile(object, x, y);
 }
@@ -386,7 +380,7 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
         ));
         it++;
     }
-    return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews));
+    return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews), object.getScore());
 }
 
 void World::createSingleTextureObject(

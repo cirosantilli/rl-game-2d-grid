@@ -12,13 +12,13 @@ Object::Object(
     unsigned int fov,
     std::unique_ptr<DrawableObject> drawableObject
 ) :
-    x(x),
-    y(y),
-    type(type),
     actor(std::move(actor)),
-    fov(fov),
     drawableObject(std::move(drawableObject)),
-    score(0)
+    type(type),
+    fov(fov),
+    score(0),
+    x(x),
+    y(y)
 {}
 Object::~Object() {}
 void Object::draw(const World& world, int cameraX, int cameraY) const {

@@ -2,6 +2,7 @@
 #define WORLD_HPP
 
 #include <ctime>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,7 +35,6 @@ class World {
         /// Collect desired actions from all objects, and resolve them
         unsigned int getHeight() const;
         unsigned int getNHumanActions() const;
-        const std::vector<std::unique_ptr<Object>>& getObjects() const;
         SDL_Renderer * getRenderer() const;
         unsigned int getTileWidthPix() const;
         unsigned int getTileHeightPix() const;
@@ -47,14 +47,18 @@ class World {
         /// wants to move into a wall?
         void update(const std::vector<std::unique_ptr<Action>> &humanActions);
     private:
+        // Types
+        typedef std::vector<std::unique_ptr<Object>> objects_t;
+
+        // Data.
         bool
             display,
             fixedRandomSeed,
             multiHumanPlayer
         ;
         int
-            showFovId,
-            randomSeed
+            randomSeed,
+            showFovId
         ;
         std::string scenario;
         unsigned int
@@ -69,10 +73,10 @@ class World {
         ;
         SDL_Renderer *renderer;
         SDL_Window *window;
-        std::vector<std::unique_ptr<Object>> objects;
+        objects_t objects;
         std::vector<SDL_Texture *> textures;
 
-        // Private methods.
+        // Methods.
         SDL_Texture * createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a);
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
         void createSingleTextureObject(
@@ -105,7 +109,7 @@ class World {
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool showFov() const;
 
-        // Static const private.
+        // Static const.
         static const unsigned int COLOR_MAX = 255;
         static const unsigned int N_COLOR_CHANNELS = 4;
 };
