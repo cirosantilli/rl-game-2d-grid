@@ -48,7 +48,7 @@ class World {
         void update(const std::vector<std::unique_ptr<Action>> &humanActions);
     private:
         // Types
-        typedef std::vector<std::unique_ptr<Object>> objects_t;
+        typedef std::map<unsigned int, std::unique_ptr<Object>> objects_t;
 
         // Data.
         bool
@@ -87,12 +87,14 @@ class World {
             unsigned int fov,
             size_t textureId
         );
-        bool findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iterator& it, const Object& object, int& dx, int& dy) const;
+        template<typename ITERATOR>
+        bool findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const;
         /// Advance iterator until the next object in the FOV of object, including it itself.
         /// Return true if such object exists, false if there are no more.
         /// The caller is responsible for incrementing the pointer to ask for the next object.
+        template<typename ITERATOR>
         bool findNextObjectInRectangle(
-            std::vector<std::unique_ptr<Object>>::const_iterator& it,
+            ITERATOR& it,
             unsigned int centerX,
             unsigned int centerY,
             unsigned int width,
@@ -100,10 +102,10 @@ class World {
             int& dx,
             int& dy
         ) const;
-        /// Make object point to the object at a given tile.
-        /// If an object is present at that position, return true.
-        /// Otherwise, return false otherwise, and do not mofify object.
-        bool findObjectAtTile(Object*& object, unsigned int x, unsigned int y) const;
+        /// Make iterator point to the object at a given tile.
+        /// Return true iff an object is present at that position.
+        template<typename ITERATOR>
+        bool findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const;
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
         /// Should we only show the FOV for a single object on screen? Or show every object?

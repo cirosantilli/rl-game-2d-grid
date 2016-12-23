@@ -68,17 +68,17 @@ void World::draw() const {
         auto it = this->objects.begin();
         int dx, dy;
         if (this->showFov()) {
-            auto const& object = *(this->objects[this->showFovId]);
+            auto const& object = *(this->objects.find(this->showFovId)->second);
             auto cameraX = object.getX() - (object.getFov() / 2);
             auto cameraY = object.getY() - (object.getFov() / 2);
-            while (this->findNextObjectInFov(it, object, dx, dy)) {
-                auto const& otherObject = **it;
+            while (this->findNextObjectInFov<decltype(it)>(it, object, dx, dy)) {
+                auto const& otherObject = *(it->second);
                 otherObject.draw(*this, cameraX, cameraY);
                 it++;
             }
         } else {
-            for (auto const& object : this->objects) {
-                object->draw(*this);
+            for (auto const& pair : this->objects) {
+                pair.second->draw(*this);
             }
         }
         SDL_RenderPresent(this->renderer);
@@ -138,22 +138,30 @@ void World::init() {
             fov,
             0
         );
+        this->createSingleTextureObject(
+            this->getWidth() / 2,
+            this->getHeight() / 2,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            1
+        );
 
         // Walls closing off the scenario borders. .
         for (unsigned int y = 0; y < this->height; ++y) {
             this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
-            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 2);
         }
         for (unsigned int x = 0; x < this->width; ++x) {
             this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
-            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
+            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 2);
         }
 
         // Randomly placed food in the center.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (std::rand() % 3 == 0 && this->isTileEmpty(x, y)) {
-                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 2);
+                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
                 }
             }
         }
@@ -232,18 +240,19 @@ void World::reset() {
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
     auto humanActionsIt = humanActions.begin();
-    for (auto &object : this->objects) {
+    for (auto &pair : this->objects) {
+        auto& object = *(pair.second);
         Action action;
-        auto& actor = object->getActor();
+        auto& actor = object.getActor();
         if (actor.takesHumanAction()) {
             action = **humanActionsIt;
             humanActionsIt++;
         } else {
-            action = actor.act(*createWorldView(*object));
+            action = actor.act(*createWorldView(object));
         }
 
-        auto x = object->getX();
-        auto y = object->getY();
+        auto x = object.getX();
+        auto y = object.getY();
 
         // X
         if (action.getMoveX() == Action::MoveX::LEFT) {
@@ -267,24 +276,25 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             }
         }
 
-        Object *objectAtTarget = NULL;
-        bool tileNonEmpty = this->findObjectAtTile(objectAtTarget, x, y);
+        auto it = this->objects.begin();
+        bool tileNonEmpty = this->findObjectAtTile(it, x, y);
+        auto& objectAtTarget = *(it->second);
         bool shouldMove = false;
         if (tileNonEmpty) {
-            auto objectType = object->getType();
-            auto targetType = objectAtTarget->getType();
+            auto objectType = object.getType();
+            auto targetType = objectAtTarget.getType();
             if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
                 shouldMove = true;
-                object->setScore(object->getScore() + 1);
-                std::cout << object->getScore() << std::endl;
-                // TODO remove plant. Requires conversion to map.
+                object.setScore(object.getScore() + 1);
+                std::cout << object.getScore() << std::endl;
+                this->objects.erase(it);
             }
         } else {
             shouldMove = true;
         }
         if (shouldMove) {
-            object->setX(x);
-            object->setY(y);
+            object.setX(x);
+            object.setY(y);
         }
     }
 }
@@ -319,8 +329,9 @@ SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned
     return texture;
 }
 
-bool World::findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iterator& it, const Object& object, int& dx, int& dy) const {
-    return this->findNextObjectInRectangle(
+template<typename ITERATOR>
+bool World::findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const {
+    return this->findNextObjectInRectangle<ITERATOR>(
         it,
         object.getX(),
         object.getY(),
@@ -331,8 +342,9 @@ bool World::findNextObjectInFov(std::vector<std::unique_ptr<Object>>::const_iter
     );
 }
 
+template<typename ITERATOR>
 bool World::findNextObjectInRectangle(
-    std::vector<std::unique_ptr<Object>>::const_iterator& it,
+    ITERATOR& it,
     unsigned int centerX,
     unsigned int centerY,
     unsigned int width,
@@ -343,7 +355,7 @@ bool World::findNextObjectInRectangle(
     // TODO: use quadtree
     auto const end = this->objects.end();
     while (it != end) {
-        auto const& object = **it;
+        auto const& object = *(it->second);
         dx = (int)object.getX() - (int)centerX;
         dy = (int)object.getY() - (int)centerY;
         if (std::abs(dx) < (int)width && std::abs(dy) < (int)height) {
@@ -354,27 +366,23 @@ bool World::findNextObjectInRectangle(
     return false;
 }
 
-bool World::findObjectAtTile(Object*& object, unsigned int x, unsigned int y) const {
-    auto it = this->objects.begin();
+template<typename ITERATOR>
+bool World::findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const {
     int dx, dy;
-    bool ret = this->findNextObjectInRectangle(it, x, y, 1, 1, dx, dy);
-    if (ret) {
-        object = it->get();
-    }
-    return ret;
+    return this->findNextObjectInRectangle<ITERATOR>(it, x, y, 1, 1, dx, dy);
 }
 
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {
-    Object *object;
-    return !this->findObjectAtTile(object, x, y);
+    auto it = this->objects.begin();
+    return !this->findObjectAtTile<decltype(it)>(it, x, y);
 }
 
 std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     auto objectViews = std::make_unique<std::vector<std::unique_ptr<ObjectView>>>();
     auto it = this->objects.begin();
     int dx, dy;
-    while (this->findNextObjectInFov(it, object, dx, dy)) {
-        auto const& otherObject = **it;
+    while (this->findNextObjectInFov<decltype(it)>(it, object, dx, dy)) {
+        auto const& otherObject = *(it->second);
         objectViews->push_back(std::make_unique<ObjectView>(
             dx, dy, otherObject.getType()
         ));
@@ -401,6 +409,12 @@ void World::createSingleTextureObject(
         this->nHumanActions++;
     }
     auto object = std::make_unique<Object>(x, y, type, std::move(actor), fov, std::move(drawableObject));
-    this->objects.push_back(std::move(object));
+    auto rbegin = this->objects.rbegin();
+    objects_t::key_type id;
+    if (rbegin != this->objects.rend()) {
+        id = this->objects.rbegin()->first + 1;
+    } else {
+        id = 0;
+    }
+    this->objects.emplace(id, std::move(object));
 }
-
