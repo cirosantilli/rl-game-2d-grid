@@ -138,30 +138,34 @@ void World::init() {
             fov,
             0
         );
-        this->createSingleTextureObject(
-            this->getWidth() / 2,
-            this->getHeight() / 2,
-            Object::Type::PLANT_EATER,
-            std::make_unique<HumanActor>(),
-            fov,
-            1
-        );
-
         // Walls closing off the scenario borders. .
+        textures_t::size_type wall_texture = 2;
         for (unsigned int y = 0; y < this->height; ++y) {
-            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
-            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 2);
+            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
         }
         for (unsigned int x = 0; x < this->width; ++x) {
-            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 1);
-            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, 2);
+            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
         }
 
-        // Randomly placed food in the center.
+        // Randomly placed food and opponents in the center.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (std::rand() % 3 == 0 && this->isTileEmpty(x, y)) {
-                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                if (this->isTileEmpty(x, y)) {
+                    if (std::rand() % 5 == 0) {
+                        std::cout << "here" << std::endl;
+                        this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                    } else if(std::rand() % 100 == 0) {
+                        this->createSingleTextureObject(
+                            x,
+                            y,
+                            Object::Type::PLANT_EATER,
+                            std::make_unique<RandomActor>(),
+                            fov,
+                            1
+                        );
+                    }
                 }
             }
         }
@@ -286,7 +290,6 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
                 shouldMove = true;
                 object.setScore(object.getScore() + 1);
-                std::cout << object.getScore() << std::endl;
                 this->objects.erase(it);
             }
         } else {
@@ -397,7 +400,7 @@ void World::createSingleTextureObject(
     Object::Type type,
     std::unique_ptr<Actor> actor,
     unsigned int fov,
-    size_t textureId
+    textures_t::size_type textureId
 ) {
     std::unique_ptr<DrawableObject> drawableObject;
     if (this->display) {

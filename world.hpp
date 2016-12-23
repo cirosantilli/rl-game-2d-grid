@@ -49,6 +49,7 @@ class World {
     private:
         // Types
         typedef std::map<unsigned int, std::unique_ptr<Object>> objects_t;
+        typedef std::vector<SDL_Texture*> textures_t;
 
         // Data.
         bool
@@ -85,7 +86,7 @@ class World {
             Object::Type type,
             std::unique_ptr<Actor> actor,
             unsigned int fov,
-            size_t textureId
+            textures_t::size_type textureId
         );
         template<typename ITERATOR>
         bool findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const;
