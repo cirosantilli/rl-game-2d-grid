@@ -90,7 +90,7 @@ static void printHelp() {
         "                 You likely don't want this for interactive simulations that\n"
         "                 block on user input (Rogue-like), as this becomes lag.\n"
         "\n"
-        "- `-f <double>`: (Fps) limit FPS to <double> FPS.\n"
+        "- `-f <double>`: (Fps) limit FPS to <double> FPS. Default: 1.0.\n"
         "\n"
         "- `-H`:          (Hold key) actions are taken if the player is holding\n"
         "                 at the end of a frame, a click is not needed.\n"
@@ -337,74 +337,83 @@ main_loop:
     }
 
     while (1) {
-        world->draw();
-        double slack;
-        double nextTarget = last_time + targetSpf;
-        decltype(humanActions.size()) currentActionIdx = 0;
-        bool needMoreHumanActions = currentActionIdx < world->getNHumanActions();
-        for (auto &action : humanActions) {
-            action->reset();
-        }
-        // Action being currently built, possibly with multiple keypresses.
-        Action currentAction;
-        bool currentActionModified;
+        bool loop = true;
         do {
+            world->draw();
+            double nextTarget = last_time + targetSpf;
+            decltype(humanActions.size()) currentActionIdx = 0;
+            bool needMoreHumanActions = currentActionIdx < world->getNHumanActions();
+            for (auto &action : humanActions) {
+                action->reset();
+            }
+            // Action being currently built, possibly with multiple keypresses.
+            Action currentAction, holdAction;
+            double slack = nextTarget - utils::get_secs();
+            bool
+                slackOver = (slack < 0.0),
+                currentActionModified = false,
+                holdActionDone = false
+            ;
             if (display) {
-                do {
-                    std::memcpy(lastKeyboardState.get(), keyboardState, keyboardStateSize);
-                    while (SDL_PollEvent(&event)) {
-                        if (event.type == SDL_QUIT) {
-                            goto quit;
-                        }
-                    }
-
-                    // Immediate action controls that don't wait for FPS limiting.
-                    if (keyboardState[SDL_SCANCODE_Q]) {
+                std::memcpy(lastKeyboardState.get(), keyboardState, keyboardStateSize);
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
                         goto quit;
                     }
-                    if (keyboardState[SDL_SCANCODE_R]) {
-                        world->reset();
-                        goto main_loop;
+                }
+
+                // Immediate action controls that don't wait for FPS limiting.
+                if (keyboardState[SDL_SCANCODE_Q]) {
+                    goto quit;
+                }
+                if (keyboardState[SDL_SCANCODE_R]) {
+                    world->reset();
+                    goto main_loop;
+                }
+
+                // Actions that may be built with multiple key-presses.
+                if (needMoreHumanActions) {
+                    currentActionModified = holdControls(
+                        keyboardState,
+                        lastKeyboardState.get(),
+                        false,
+                        currentAction
+                    );
+                    if (
+                        activateKey(SDL_SCANCODE_SPACE, keyboardState, lastKeyboardState.get(), false)
+                        || (currentActionModified && immediateAction)
+                    ) {
+                        *humanActions[currentActionIdx] = currentAction;
+                        currentActionIdx++;
+                        needMoreHumanActions = currentActionIdx < world->getNHumanActions();
+                        currentAction.reset();
+                        currentActionModified = false;
                     }
-
-                    // Actions that may be built with multiple key-presses.
-                    if (needMoreHumanActions) {
-                        currentActionModified = holdControls(
-                            keyboardState,
-                            lastKeyboardState.get(),
-                            false,
-                            currentAction
-                        );
-                        if (
-                            activateKey(SDL_SCANCODE_SPACE, keyboardState, lastKeyboardState.get(), false)
-                            || (currentActionModified && immediateAction)
-                        ) {
-                            *humanActions[currentActionIdx] = currentAction;
-                            currentActionIdx++;
-                            needMoreHumanActions = currentActionIdx < world->getNHumanActions();
-                            currentAction.reset();
-                        }
+                }
+                if (slackOver && holdKey && world->getNHumanActions() > 0) {
+                    holdAction.reset();
+                    bool holdActionModified = holdControls(
+                        keyboardState,
+                        lastKeyboardState.get(),
+                        true,
+                        currentAction
+                    );
+                    if (holdActionModified) {
+                        *humanActions[0] = currentAction;
+                        holdActionDone = true;
                     }
-
-                } while (blockOnPlayer && needMoreHumanActions);
+                }
             }
-            slack = nextTarget - utils::get_secs();
-        } while (limitFps && slack > 0.0);
-
-        // Act if input should be taken when keys are held.
-        // Only touch the first controller.
-        if (holdKey && (world->getNHumanActions() > 0)) {
-            currentAction.reset();
-            currentActionModified = holdControls(
-                keyboardState,
-                lastKeyboardState.get(),
-                true,
-                currentAction
-            );
-            if (currentActionModified) {
-                *humanActions[0] = currentAction;
-            }
-        }
+            loop =
+                !holdActionDone
+                &&
+                (
+                    (blockOnPlayer && needMoreHumanActions)
+                    ||
+                    (limitFps && !slackOver)
+                )
+            ;
+        } while (loop);
 
         last_time = utils::get_secs();
         world->update(humanActions);

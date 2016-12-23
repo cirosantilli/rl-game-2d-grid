@@ -1,5 +1,6 @@
 # TODO
 
+-   advance world if `-H -f 2.0` without `-b` and some key is being held at the end. Currently `-H` without `-b` is useless.
 -   implement one type of score
 -   use protobuf serialization for full world state, controller world view, and controller actions
 -   put players in separate processes, and control resources:
@@ -18,4 +19,7 @@
 -   draw grids to screen
 -   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
 -   more human understandable textures (?) This allows human to cheat by using external world knowledge. Possibly use random letters as textures? 
--   advance world if `-H -f 2.0` and some key is being held at the end.
+
+## Plant eater game
+
+-   non-uniform spacial distributions of plants and plant eaters

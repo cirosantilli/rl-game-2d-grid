@@ -154,7 +154,6 @@ void World::init() {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (this->isTileEmpty(x, y)) {
                     if (std::rand() % 5 == 0) {
-                        std::cout << "here" << std::endl;
                         this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
                     } else if(std::rand() % 100 == 0) {
                         this->createSingleTextureObject(
