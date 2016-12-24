@@ -6,8 +6,8 @@
 #include "do_nothing_actor.hpp"
 #include "do_nothing_drawable_object.hpp"
 #include "drawable_object.hpp"
-#include "flee_human_actor.hpp"
-#include "follow_human_actor.hpp"
+#include "flee_type_actor.hpp"
+#include "follow_type_actor.hpp"
 #include "human_actor.hpp"
 #include "move_down_actor.hpp"
 #include "move_up_actor.hpp"
@@ -156,6 +156,15 @@ void World::init() {
                             fov,
                             1
                         );
+                    } else if(std::rand() % 100 == 0) {
+                        this->createSingleTextureObject(
+                            x,
+                            y,
+                            Object::Type::PLANT_EATER,
+                            std::make_unique<FollowTypeActor>(Object::Type::PLANT),
+                            fov,
+                            4
+                        );
                     }
                 }
             }
@@ -213,7 +222,7 @@ void World::init() {
             3 * this->getWidth() / 4,
             this->getHeight() / 4,
             Object::Type::FOLLOW_HUMAN,
-            std::make_unique<FollowHumanActor>(),
+            std::make_unique<FollowTypeActor>(),
             fov,
             3
         );
@@ -221,7 +230,7 @@ void World::init() {
             3 * this->getWidth() / 4,
             3 * this->getHeight() / 4,
             Object::Type::FLEE_HUMAN,
-            std::make_unique<FleeHumanActor>(),
+            std::make_unique<FleeTypeActor>(),
             fov,
             4
         );

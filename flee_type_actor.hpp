@@ -1,16 +1,20 @@
-#ifndef FLEE_HUMAN_ACTOR_HPP
-#define FLEE_HUMAN_ACTOR_HPP
+#ifndef FLEE_TYPE_ACTOR_HPP
+#define FLEE_TYPE_ACTOR_HPP
 
 #include "actor.hpp"
+#include "object.hpp"
 
 class Action;
 class WorldView;
 
 /// Flee the first human it sees. TODO: closest.
 /// Dumb: no understanding of walls.
-class FleeHumanActor : public Actor {
+class FleeTypeActor : public Actor {
     public:
+        FleeTypeActor(Object::Type type = Object::Type::HUMAN);
         virtual Action act(const WorldView &worldView);
+    private:
+        Object::Type type;
 };
 
 #endif

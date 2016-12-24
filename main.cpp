@@ -60,6 +60,8 @@ static bool holdControls(
     if (activateKeyActionModified(SDL_SCANCODE_DOWN, keyboardState, lastKeyboardState, holdKey, currentActionModified)) {
         action.setMoveY(Action::MoveY::DOWN);
     }
+    if (activateKeyActionModified(SDL_SCANCODE_SPACE, keyboardState, lastKeyboardState, holdKey, currentActionModified)) {
+    }
     return currentActionModified;
 }
 
@@ -103,6 +105,8 @@ static void printHelp() {
         "\n"
         "                 If a click action (-i) was taken during the previous frame,\n"
         "                 it gets overridden if any key is held at the en of the frame.\n"
+        "\n"
+        "                 Holding SPACE makes the simulation advance with an empty action.\n"
         "\n"
         "                 Makes the game more interactive, and controls less precise.\n"
         "\n"
@@ -383,7 +387,6 @@ main_loop:
                         activateKey(SDL_SCANCODE_SPACE, keyboardState, lastKeyboardState.get(), false)
                         || (currentActionModified && immediateAction)
                     ) {
-                        std::cout << currentAction << std::endl;
                         *humanActions[currentActionIdx] = currentAction;
                         currentActionIdx++;
                         needMoreHumanActions = currentActionIdx < world->getNHumanActions();

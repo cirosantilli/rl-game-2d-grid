@@ -1,12 +1,14 @@
 #include "action.hpp"
-#include "follow_human_actor.hpp"
+#include "follow_type_actor.hpp"
 #include "object_view.hpp"
 #include "world_view.hpp"
 
-Action FollowHumanActor::act(const WorldView &worldView) {
+FollowTypeActor::FollowTypeActor(Object::Type type) : type(type) {}
+
+Action FollowTypeActor::act(const WorldView &worldView) {
     Action a;
     for (auto const& objectView : worldView.getObjectViews()) {
-        if (objectView->getType() == Object::Type::HUMAN) {
+        if (objectView->getType() == this->type) {
             if (objectView->getX() > 0) {
                 a.setMoveX(Action::MoveX::RIGHT);
             } else if (objectView->getX() < 0) {

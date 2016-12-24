@@ -17,6 +17,7 @@
 -   draw grids to screen
 -   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
 -   more human understandable textures (?) This allows human to cheat by using external world knowledge. Possibly use random letters as textures? 
+-   give string names; to textures
 
 ## Plant eater game
 
