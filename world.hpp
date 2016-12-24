@@ -26,7 +26,7 @@ class World {
             int showFovId,
             bool fixedRandomSeed,
             int randomSeed,
-            bool multiHumanPlayer,
+            unsigned int nHumanPlayers,
             std::string scenario
         );
         ~World();
@@ -54,8 +54,7 @@ class World {
         // Data.
         bool
             display,
-            fixedRandomSeed,
-            multiHumanPlayer
+            fixedRandomSeed
         ;
         int
             randomSeed,
@@ -64,7 +63,12 @@ class World {
         std::string scenario;
         unsigned int
             height,
+            // Number of human actions required.
+            // May be != nHumanPlayers, since human players might die in the middle of the game.
             nHumanActions,
+            // How many human players existed when the game started.
+            // Not affected by human players that died.
+            nHumanPlayersInitial,
             tileHeightPix,
             tileWidthPix,
             width,

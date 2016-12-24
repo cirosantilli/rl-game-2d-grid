@@ -27,16 +27,16 @@ World::World(
     int showFovId,
     bool fixedRandomSeed,
     int randomSeed,
-    bool multiHumanPlayer,
+    unsigned int nHumanPlayers,
     std::string scenario
 ) :
     display(display),
     fixedRandomSeed(fixedRandomSeed),
-    multiHumanPlayer(multiHumanPlayer),
     randomSeed(randomSeed),
     showFovId(showFovId),
     scenario(std::move(scenario)),
     height(height),
+    nHumanPlayersInitial(nHumanPlayers),
     width(width),
     windowHeightPix(windowHeightPix),
     windowWidthPix(windowWidthPix)
@@ -130,14 +130,6 @@ void World::init() {
     }
 
     if (this->scenario == "plants") {
-        this->createSingleTextureObject(
-            this->getWidth() / 2,
-            this->getHeight() / 2,
-            Object::Type::PLANT_EATER,
-            std::make_unique<HumanActor>(),
-            fov,
-            0
-        );
         // Walls closing off the scenario borders. .
         textures_t::size_type wall_texture = 2;
         for (unsigned int y = 0; y < this->height; ++y) {
@@ -168,6 +160,26 @@ void World::init() {
                 }
             }
         }
+
+        // Place human players.
+        {
+            decltype(this->nHumanPlayersInitial) totalPlayers = 0;
+            while (totalPlayers < this->nHumanPlayersInitial) {
+                unsigned int x = std::rand() % (this->width - 1);
+                unsigned int y = std::rand() % (this->height - 1);
+                if (this->isTileEmpty(x, y)) {
+                    this->createSingleTextureObject(
+                        x,
+                        y,
+                        Object::Type::PLANT_EATER,
+                        std::make_unique<HumanActor>(),
+                        fov,
+                        0
+                    );
+                    totalPlayers++;
+                }
+            }
+        }
     } else {
         // Place objects.
         this->createSingleTextureObject(
@@ -178,16 +190,17 @@ void World::init() {
             fov,
             0
         );
-        if (this->multiHumanPlayer) {
-            this->createSingleTextureObject(
-                (this->getWidth() / 2) + 1,
-                (this->getHeight() / 2) + 1,
-                Object::Type::HUMAN,
-                std::make_unique<HumanActor>(),
-                fov,
-                1
-            );
-        }
+        // TODO use nHumanPlayers
+        //if (this->multiHumanPlayer) {
+            //this->createSingleTextureObject(
+                //(this->getWidth() / 2) + 1,
+                //(this->getHeight() / 2) + 1,
+                //Object::Type::HUMAN,
+                //std::make_unique<HumanActor>(),
+                //fov,
+                //1
+            //);
+        //}
         this->createSingleTextureObject(
             this->getWidth() / 4,
             this->getHeight() / 4,

@@ -1,7 +1,5 @@
 # TODO
 
--   advance world if `-H -f 2.0` without `-b` and some key is being held at the end. Currently `-H` without `-b` is useless.
--   implement one type of score
 -   use protobuf serialization for full world state, controller world view, and controller actions
 -   put players in separate processes, and control resources:
     - time
@@ -23,3 +21,4 @@
 ## Plant eater game
 
 -   non-uniform spacial distributions of plants and plant eaters
+-   some condition where collaboration leads to victory vs desire to betray friends

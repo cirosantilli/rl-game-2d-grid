@@ -87,18 +87,21 @@ static void printHelp() {
         "                 Helps humans visualize non-interactive simulations\n"
         "                 that are too fast. E.g. `-f 2.0` limits simulation to 2 FPS.\n"
         "\n"
-        "                 You likely don't want this for interactive simulations that\n"
-        "                 block on user input (Rogue-like), as this becomes lag.\n"
+        "                 Forces -p = 0, since it is currently impossible to control\n"
+        "                 players without a display.\n"
         "\n"
         "- `-f <double>`: (Fps) limit FPS to <double> FPS. Default: 1.0.\n"
+        "\n"
+        "                 You likely don't want this for interactive simulations that\n"
+        "                 block on user input (Rogue-like), as this becomes lag.\n"
         "\n"
         "- `-H`:          (Hold key) actions are taken if the player is holding\n"
         "                 at the end of a frame, a click is not needed.\n"
         "\n"
-        "                 This alone does not cause the end of the frame. You either\n"
-        "                 need to press space while holding the keys, or use -b for that.\n"
+        "                 The simulation advances automatically if the player is hodling any key\n"
+        "                 at the end of the frame.\n"
         "\n"
-        "                 If a click action was taken during the previous frame,\n"
+        "                 If a click action (-i) was taken during the previous frame,\n"
         "                 it gets overridden if any key is held at the en of the frame.\n"
         "\n"
         "                 Makes the game more interactive, and controls less precise.\n"
@@ -111,14 +114,6 @@ static void printHelp() {
         "                 Only the first human player is affected by this option, since it is impossible\n"
         "                 to give different controls to different players (the only two design\n"
         "                 choices are: affect only first or affect all equally, and we chose N.1).\n"
-        "\n"
-        "                 Another sensible semantic for this command, which is not currently\n"
-        "                 implemented, would be to update the action for player 0 whenever a key\n"
-        "                 is held in the middle of the frame. This would make it impossible to\n"
-        "                 control multiple human players.\n"
-        "\n"
-        "                 SPACE is not affected by hold: you still have to press it\n"
-        "                 multiple times to advance.\n"
         "\n"
         "- `-i`:          (Immediate) mode. Create action immediately whenever the user presses any key,\n"
         "                 without waiting for `SPACE` to be pressed.\n"
@@ -145,7 +140,9 @@ static void printHelp() {
         "\n"
         "## World state options\n"
         "\n"
-        "- `-m`:          add multiple (2) human players to the map instead of just one\n"
+        "- `-p`:          now many human players should be added to the map. Default: 1.\n"
+        "\n"
+        "                 With 0 you watch computer bots fight.\n"
         "\n"
         "- `-r`:          (Random) set a fixed random seed.\n"
         "\n"
@@ -240,7 +237,6 @@ int main(int argc, char **argv) {
         display = true,
         fixedRandomSeed = false,
         holdKey = false,
-        multiHumanPlayer = false,
         immediateAction = false,
         limitFps = false,
         printFps = true
@@ -252,6 +248,7 @@ int main(int argc, char **argv) {
     ;
     int showFovId = -1;
     unsigned int
+        nHumanPlayers = 1,
         randomSeed,
         ticks = 0,
         width = 100,
@@ -280,8 +277,8 @@ int main(int argc, char **argv) {
                 windowWidthPix = std::strtol(argv[i + 1], NULL, 10);
 
             // World state options.
-            } else if (std::strcmp(argv[i], "-m") == 0) {
-                multiHumanPlayer = !multiHumanPlayer;
+            } else if (std::strcmp(argv[i], "-p") == 0) {
+                nHumanPlayers = std::strtol(argv[i + 1], NULL, 10);
             } else if (std::strcmp(argv[i], "-r") == 0) {
                 randomSeed = std::strtol(argv[i + 1], NULL, 10);
                 fixedRandomSeed = true;
@@ -305,6 +302,9 @@ int main(int argc, char **argv) {
     auto windowHeightPix = windowWidthPix;
     auto targetSpf = 1.0 / targetFps;
     auto height = width;
+    if (!display) {
+        nHumanPlayers = 0;
+    }
 
     world = std::make_unique<World>(
         width,
@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
         showFovId,
         fixedRandomSeed,
         randomSeed,
-        multiHumanPlayer,
+        nHumanPlayers,
         std::move(scenario)
     );
 main_loop:
@@ -337,17 +337,17 @@ main_loop:
     }
 
     while (1) {
+        world->draw();
+        double nextTarget = last_time + targetSpf;
+        decltype(humanActions.size()) currentActionIdx = 0;
+        bool needMoreHumanActions = currentActionIdx < world->getNHumanActions();
+        for (auto &action : humanActions) {
+            action->reset();
+        }
+        // Action being currently built, possibly with multiple keypresses.
+        Action currentAction, holdAction;
         bool loop = true;
         do {
-            world->draw();
-            double nextTarget = last_time + targetSpf;
-            decltype(humanActions.size()) currentActionIdx = 0;
-            bool needMoreHumanActions = currentActionIdx < world->getNHumanActions();
-            for (auto &action : humanActions) {
-                action->reset();
-            }
-            // Action being currently built, possibly with multiple keypresses.
-            Action currentAction, holdAction;
             double slack = nextTarget - utils::get_secs();
             bool
                 slackOver = (slack < 0.0),
@@ -383,6 +383,7 @@ main_loop:
                         activateKey(SDL_SCANCODE_SPACE, keyboardState, lastKeyboardState.get(), false)
                         || (currentActionModified && immediateAction)
                     ) {
+                        std::cout << currentAction << std::endl;
                         *humanActions[currentActionIdx] = currentAction;
                         currentActionIdx++;
                         needMoreHumanActions = currentActionIdx < world->getNHumanActions();

@@ -1,6 +1,8 @@
 #ifndef ACTION_HPP
 #define ACTION_HPP
 
+#include <iostream>
+
 class Action {
     public:
         enum class MoveX {
@@ -24,5 +26,9 @@ class Action {
         MoveX moveX;
         MoveY moveY;
 };
+
+std::ostream& operator<<(std::ostream& os, const Action::MoveX& x);
+std::ostream& operator<<(std::ostream& os, const Action::MoveY& y);
+std::ostream& operator<<(std::ostream& os, const Action& a);
 
 #endif
