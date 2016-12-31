@@ -35,5 +35,12 @@ void Object::setX(unsigned int x) { this->x = x; }
 void Object::setY(unsigned int y) { this->y = y; }
 
 std::ostream& operator<<(std::ostream& os, const Object& o) {
-    return os << "Object, x = " << o.getX() << ", y = " << o.getY();
+    return os
+        << "Object"
+        << ", x = " << o.getX()
+        << ", y = " << o.getY()
+        << ", type = " << static_cast<typename std::underlying_type<Object::Type>::type>(o.getType())
+        << ", score = " << o.getScore()
+        << ", fov = " << o.getFov()
+    ;
 }

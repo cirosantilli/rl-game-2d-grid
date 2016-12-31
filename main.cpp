@@ -130,8 +130,10 @@ static void printHelp() {
         "- `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way to show\n"
         "                 scenario list here. For now read source\n"
         "\n"
-        "- `-v <int>`:    (View player) Only show what the int-th player is seeing on screen,\n"
-        "                 limited by its field of view.\n"
+        "- `-v <int>`:    (View player) Only show what the int-th player is able to observe.\n"
+        "\n"
+        "                 This notably limits the field of view of the player,\n"
+        "                 but also includes for which player the HUD is about (e.g. score).\n"
         "\n"
         "                 You are forced to use this if the world is so large that\n"
         "                 each tile would be less than one pixel wide.\n"
@@ -139,8 +141,15 @@ static void printHelp() {
         "                 If the field of view is so large that the tiles are less than\n"
         "                 one pixel wide, then your game simply cannot be visualized.\n"
         "\n"
+        "                 You do not need to be controlling the observed player: in particular\n"
+        "                 if there are 0 players to be controlled by keyboard, you can just watch\n"
+        "                 the action unroll by itself.\n"
+        "\n"
+        "                 You can also control one player while observing another,\n"
+        "                 but you will likely go nuts.\n"
+        "\n"
         "- `-W <int>`:    (Width) window width in pixels. Square windows only for now.\n"
-        "                 Must be divisible by the width of the world.\n"
+        "                 Must be divisible by the width of the world. Default: 500.\n"
         "\n"
         "## World state options\n"
         "\n"
@@ -243,18 +252,18 @@ int main(int argc, char **argv) {
         holdKey = false,
         immediateAction = false,
         limitFps = false,
-        printFps = true
+        printFps = true,
+        showFov = false
     ;
     std::string scenario;
     double
         targetFps = 1.0,
         last_time;
     ;
-    int showFovId = -1;
     unsigned int
         nHumanPlayers = 1,
         randomSeed,
-        ticks = 0,
+        showPlayerId = 0,
         width = 100,
         windowWidthPix = 500
     ;
@@ -276,7 +285,8 @@ int main(int argc, char **argv) {
             } else if (std::strcmp(argv[i], "-i") == 0) {
                 immediateAction = !immediateAction;
             } else if (std::strcmp(argv[i], "-v") == 0) {
-                showFovId = std::strtol(argv[i + 1], NULL, 10);
+                showPlayerId = std::strtol(argv[i + 1], NULL, 10);
+                showFov = true;
             } else if (std::strcmp(argv[i], "-W") == 0) {
                 windowWidthPix = std::strtol(argv[i + 1], NULL, 10);
 
@@ -316,7 +326,8 @@ int main(int argc, char **argv) {
         display,
         windowWidthPix,
         windowHeightPix,
-        showFovId,
+        showPlayerId,
+        showFov,
         fixedRandomSeed,
         randomSeed,
         nHumanPlayers,
@@ -421,7 +432,6 @@ main_loop:
 
         last_time = utils::get_secs();
         world->update(humanActions);
-        ticks++;
         if (printFps) {
             utils::fps_update_and_print();
         }

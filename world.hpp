@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "object.hpp"
 
@@ -23,7 +24,8 @@ class World {
             bool display,
             unsigned int windowWidthPix,
             unsigned int windowHeightPix,
-            int showFovId,
+            unsigned int showPlayerId,
+            bool showFov,
             bool fixedRandomSeed,
             int randomSeed,
             unsigned int nHumanPlayers,
@@ -40,9 +42,12 @@ class World {
         unsigned int getTileHeightPix() const;
         unsigned int getWidth() const;
         unsigned int getViewHeight() const;
+        /// Initialize world.
+        /// When placing objects, prefer to put human controlled objects first,
+        /// to make them easier to select from the command line.
         void init();
         void reset();
-        /// to the next world state. E.g.: what happens if two objects
+        /// Update to the next world state. E.g.: what happens if two objects
         /// want to move to the same place next tick? Or if an object
         /// wants to move into a wall?
         void update(const std::vector<std::unique_ptr<Action>> &humanActions);
@@ -54,21 +59,24 @@ class World {
         // Data.
         bool
             display,
-            fixedRandomSeed
+            fixedRandomSeed,
+            showFov
         ;
         int
-            randomSeed,
-            showFovId
+            randomSeed
         ;
         std::string scenario;
         unsigned int
             height,
+            hud_text_x,
             // Number of human actions required.
             // May be != nHumanPlayers, since human players might die in the middle of the game.
             nHumanActions,
             // How many human players existed when the game started.
             // Not affected by human players that died.
             nHumanPlayersInitial,
+            showPlayerId,
+            ticks,
             tileHeightPix,
             tileWidthPix,
             width,
@@ -78,6 +86,7 @@ class World {
         ;
         SDL_Renderer *renderer;
         SDL_Window *window;
+        TTF_Font *font;
         objects_t objects;
         std::vector<SDL_Texture *> textures;
 
@@ -114,11 +123,22 @@ class World {
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
         /// Should we only show the FOV for a single object on screen? Or show every object?
-        bool showFov() const;
+        bool getShowFov() const;
 
         // Static const.
-        static const unsigned int COLOR_MAX = 255;
-        static const unsigned int N_COLOR_CHANNELS = 4;
+        constexpr static const unsigned int COLOR_MAX = 255;
+        constexpr static const unsigned int N_COLOR_CHANNELS = 4;
+        constexpr static const unsigned int HUD_WIDTH_PIX = 200;
+
+        static void render_text(
+            SDL_Renderer *renderer,
+            int x,
+            int y,
+            const char *text,
+            TTF_Font *font,
+            SDL_Rect *rect,
+            SDL_Color *color
+        );
 };
 
 #endif

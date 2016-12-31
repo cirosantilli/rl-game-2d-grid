@@ -5,7 +5,7 @@ STD ?= c++14
 CCC ?= g++ -MMD -ggdb3 -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
 DEP_EXT ?= .d
 IN_EXT ?= .cpp
-LIBS ?= -lm -lSDL2
+LIBS ?= -lm -lSDL2 -lSDL2_ttf
 OBJ_EXT ?= .o
 OUT_EXT ?= .out
 RUN ?= main

@@ -1,5 +1,7 @@
 #include <cstdlib>
 
+#include <SDL2/SDL_ttf.h>
+
 #include "action.hpp"
 #include "actor.hpp"
 #include "actor.hpp"
@@ -24,7 +26,8 @@ World::World(
     bool display,
     unsigned int windowWidthPix,
     unsigned int windowHeightPix,
-    int showFovId,
+    unsigned int showPlayerId,
+    bool showFov,
     bool fixedRandomSeed,
     int randomSeed,
     unsigned int nHumanPlayers,
@@ -32,11 +35,12 @@ World::World(
 ) :
     display(display),
     fixedRandomSeed(fixedRandomSeed),
+    showFov(showFov),
     randomSeed(randomSeed),
-    showFovId(showFovId),
     scenario(std::move(scenario)),
     height(height),
     nHumanPlayersInitial(nHumanPlayers),
+    showPlayerId(showPlayerId),
     width(width),
     windowHeightPix(windowHeightPix),
     windowWidthPix(windowWidthPix)
@@ -46,8 +50,23 @@ World::World(
     if (this->display) {
         // Window setup.
         SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
-        SDL_CreateWindowAndRenderer(this->windowWidthPix, this->windowHeightPix, 0, &this->window, &this->renderer);
+        SDL_CreateWindowAndRenderer(
+            this->windowWidthPix + this->HUD_WIDTH_PIX,
+            this->windowHeightPix,
+            0,
+            &this->window,
+            &this->renderer
+        );
         SDL_SetWindowTitle(window, __FILE__);
+
+        /* TTF. */
+        TTF_Init();
+        this->font = TTF_OpenFont("FreeSans.ttf", 24);
+        if (this->font == NULL) {
+            fprintf(stderr, "error: font not found\n");
+            exit(EXIT_FAILURE);
+        }
+        this->hud_text_x = this->windowWidthPix + 0.05 * this->HUD_WIDTH_PIX;
     }
     this->init();
 }
@@ -55,10 +74,41 @@ World::World(
 World::~World() {
     if (this->display) {
         this->destroyTextures();
+        TTF_Quit();
         SDL_DestroyRenderer(this->renderer);
         SDL_DestroyWindow(this->window);
         SDL_Quit();
     }
+}
+
+/*
+- x, y: upper left corner of string
+- rect output Width and height contain rendered dimensions.
+*/
+void World::render_text(
+    SDL_Renderer *renderer,
+    int x,
+    int y,
+    const char *text,
+    TTF_Font *font,
+    SDL_Rect *rect,
+    SDL_Color *color
+) {
+    SDL_Surface *surface;
+    SDL_Texture *texture;
+
+    surface = TTF_RenderText_Solid(font, text, *color);
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+    rect->x = x;
+    rect->y = y;
+    rect->w = surface->w;
+    rect->h = surface->h;
+    /* This is wasteful for textures that stay the same.
+     * But makes things less stateful and easier to usec
+     * Not going to code an atlas solution here... are we? */
+    SDL_FreeSurface(surface);
+    SDL_RenderCopy(renderer, texture, NULL, rect);
+    SDL_DestroyTexture(texture);
 }
 
 void World::draw() const {
@@ -67,11 +117,14 @@ void World::draw() const {
         SDL_RenderClear(this->renderer);
         auto it = this->objects.begin();
         int dx, dy;
-        if (this->showFov()) {
-            auto const& object = *(this->objects.find(this->showFovId)->second);
-            auto cameraX = object.getX() - (object.getFov() / 2);
-            auto cameraY = object.getY() - (object.getFov() / 2);
-            while (this->findNextObjectInFov<decltype(it)>(it, object, dx, dy)) {
+        auto const& showObject = *(this->objects.find(this->showPlayerId)->second);
+        auto worldView = createWorldView(showObject);
+        if (this->getShowFov()) {
+            auto cameraX = showObject.getX() - showObject.getFov() + 1;
+            auto cameraY = showObject.getY() - showObject.getFov() + 1;
+            // TODO: loop over existing world view here,
+            // to keep as close as possible to actual observable state.
+            while (this->findNextObjectInFov<decltype(it)>(it, showObject, dx, dy)) {
                 auto const& otherObject = *(it->second);
                 otherObject.draw(*this, cameraX, cameraY);
                 it++;
@@ -81,7 +134,29 @@ void World::draw() const {
                 pair.second->draw(*this);
             }
         }
-        SDL_RenderPresent(this->renderer);
+
+        // HUD.
+        {
+            SDL_Rect rect;
+
+            // Separator.
+            SDL_SetRenderDrawColor(renderer, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX);
+            rect.x = this->windowWidthPix;
+            rect.y = 0;
+            rect.w = 1;
+            rect.h = this->windowHeightPix;
+            SDL_RenderFillRect(this->renderer, &rect);
+
+            // Text..
+            rect.y = 0;
+            rect.h = 0;
+            SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "score", this->font, &rect, &color);
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(worldView->getScore()).c_str(), this->font, &rect, &color);
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "time", this->font, &rect, &color);
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
+            SDL_RenderPresent(this->renderer);
+        }
     }
 }
 
@@ -99,6 +174,7 @@ void World::init() {
     }
     std::srand(this->randomSeed);
 
+    this->ticks = 0;
     this->nHumanActions = 0;
     unsigned int fov = 5;
     //unsigned int fov = std::min(this->getWidth(), this->getHeight()) / 2;
@@ -107,8 +183,8 @@ void World::init() {
     if (this->display) {
         unsigned int fovWidth = 0;
         unsigned int fovHeight = 0;
-        if (this->showFov()) {
-            fovWidth = fov;
+        if (this->getShowFov()) {
+            fovWidth = 2 * fov - 1;
             fovHeight = fovWidth;
             this->viewHeight = fovHeight;
         } else {
@@ -116,66 +192,26 @@ void World::init() {
             fovHeight = this->height;
             this->viewHeight = this->height;
         }
-        this->tileWidthPix = windowWidthPix / fovWidth;
-        this->tileHeightPix = windowHeightPix / fovHeight;
-        createSolidTexture(COLOR_MAX, 0, 0, 0);
-        createSolidTexture(0, COLOR_MAX, 0, 0);
-        createSolidTexture(0, 0, COLOR_MAX, 0);
-        createSolidTexture(COLOR_MAX, COLOR_MAX, 0, 0);
-        createSolidTexture(COLOR_MAX, 0, COLOR_MAX, 0);
-        createSolidTexture(0, COLOR_MAX, COLOR_MAX, 0);
-        createSolidTexture(COLOR_MAX, COLOR_MAX, COLOR_MAX, 0);
-        createSolidTexture(COLOR_MAX / 2, COLOR_MAX / 2, COLOR_MAX / 2, 0);
-        createSolidTexture(0, COLOR_MAX / 2, COLOR_MAX, 0);
+        this->tileWidthPix = this->windowWidthPix / fovWidth;
+        this->tileHeightPix = this->windowHeightPix / fovHeight;
+        createSolidTexture(World::COLOR_MAX, 0, 0, 0);
+        createSolidTexture(0, World::COLOR_MAX, 0, 0);
+        createSolidTexture(0, 0, World::COLOR_MAX, 0);
+        createSolidTexture(World::COLOR_MAX, World::COLOR_MAX, 0, 0);
+        createSolidTexture(World::COLOR_MAX, 0, World::COLOR_MAX, 0);
+        createSolidTexture(0, World::COLOR_MAX, World::COLOR_MAX, 0);
+        createSolidTexture(World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, 0);
+        createSolidTexture(World::COLOR_MAX / 2, World::COLOR_MAX / 2, World::COLOR_MAX / 2, 0);
+        createSolidTexture(0, World::COLOR_MAX / 2, World::COLOR_MAX, 0);
     }
 
     if (this->scenario == "plants") {
-        // Walls closing off the scenario borders. .
-        textures_t::size_type wall_texture = 2;
-        for (unsigned int y = 0; y < this->height; ++y) {
-            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-        }
-        for (unsigned int x = 0; x < this->width; ++x) {
-            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-        }
-
-        // Randomly placed food and opponents in the center.
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y)) {
-                    if (std::rand() % 5 == 0) {
-                        this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
-                    } else if(std::rand() % 100 == 0) {
-                        this->createSingleTextureObject(
-                            x,
-                            y,
-                            Object::Type::PLANT_EATER,
-                            std::make_unique<RandomActor>(),
-                            fov,
-                            1
-                        );
-                    } else if(std::rand() % 100 == 0) {
-                        this->createSingleTextureObject(
-                            x,
-                            y,
-                            Object::Type::PLANT_EATER,
-                            std::make_unique<FollowTypeActor>(Object::Type::PLANT),
-                            fov,
-                            4
-                        );
-                    }
-                }
-            }
-        }
-
         // Place human players.
         {
             decltype(this->nHumanPlayersInitial) totalPlayers = 0;
             while (totalPlayers < this->nHumanPlayersInitial) {
-                unsigned int x = std::rand() % (this->width - 1);
-                unsigned int y = std::rand() % (this->height - 1);
+                unsigned int x = 1 + std::rand() % (this->width - 2);
+                unsigned int y = 1 + std::rand() % (this->height - 2);
                 if (this->isTileEmpty(x, y)) {
                     this->createSingleTextureObject(
                         x,
@@ -189,6 +225,83 @@ void World::init() {
                 }
             }
         }
+
+        // Eaters that follow food.
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                    this->createSingleTextureObject(
+                        x,
+                        y,
+                        Object::Type::PLANT_EATER,
+                        std::make_unique<FollowTypeActor>(Object::Type::PLANT),
+                        fov,
+                        4
+                    );
+                }
+            }
+        }
+
+        // Random eaters.
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                    this->createSingleTextureObject(
+                        x,
+                        y,
+                        Object::Type::PLANT_EATER,
+                        std::make_unique<RandomActor>(),
+                        fov,
+                        1
+                    );
+                }
+            }
+        }
+
+        // Plants
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 5 == 0)) {
+                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                }
+            }
+        }
+
+        // Walls closing off the scenario borders.
+        textures_t::size_type wall_texture = 2;
+        for (unsigned int y = 0; y < this->height; ++y) {
+            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+        }
+        for (unsigned int x = 0; x < this->width; ++x) {
+            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+        }
+    } else if (this->scenario == "plants-debug") {
+        this->createSingleTextureObject(
+            10,
+            10,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        this->createSingleTextureObject(
+            14,
+            10,
+            Object::Type::WALL,
+            std::make_unique<DoNothingActor>(),
+            0,
+            2
+        );
+        this->createSingleTextureObject(
+            0,
+            0,
+            Object::Type::WALL,
+            std::make_unique<DoNothingActor>(),
+            0,
+            2
+        );
     } else {
         // Place objects.
         this->createSingleTextureObject(
@@ -320,7 +433,9 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             object.setX(x);
             object.setY(y);
         }
+
     }
+    this->ticks++;
 }
 
 unsigned int World::getHeight() const { return this->height; }
@@ -332,7 +447,7 @@ unsigned int World::getTileWidthPix() const { return this->tileWidthPix; }
 unsigned int World::getWidth() const { return this->width; }
 unsigned int World::getViewHeight() const { return this->viewHeight; }
 
-bool World::showFov() const { return this->showFovId >= 0; }
+bool World::getShowFov() const { return this->showFov; }
 
 SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a) {
     int pitch = 0;
