@@ -24,3 +24,7 @@ Action FleeTypeActor::act(const WorldView &worldView) {
     }
     return a;
 }
+
+std::string FleeTypeActor::getTypeStr() const {
+    return "FleeTypeActor";
+}

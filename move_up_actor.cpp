@@ -4,3 +4,7 @@
 Action MoveUpActor::act(const WorldView&) {
     return Action(Action::MoveX::NONE, Action::MoveY::UP);
 }
+
+std::string MoveUpActor::getTypeStr() const {
+    return "MoveUpActor";
+}

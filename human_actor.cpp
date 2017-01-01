@@ -5,3 +5,6 @@ Action HumanActor::act(const WorldView&) {
     return Action();
 }
 bool HumanActor::takesHumanAction() const { return true; }
+std::string HumanActor::getTypeStr() const {
+    return "HumanActor";
+}

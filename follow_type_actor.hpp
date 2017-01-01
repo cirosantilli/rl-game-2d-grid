@@ -13,6 +13,7 @@ class FollowTypeActor : public Actor {
     public:
         FollowTypeActor(Object::Type type = Object::Type::HUMAN);
         virtual Action act(const WorldView &worldView);
+        virtual std::string getTypeStr() const;
     private:
         Object::Type type;
 };

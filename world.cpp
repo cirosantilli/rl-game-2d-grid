@@ -525,37 +525,40 @@ void World::printScores() const {
         Object::Type,
         std::map<
             decltype(std::declval<Object>().getScore()),
-            std::set<objects_t::key_type>
+            std::set<std::pair<
+                objects_t::key_type,
+                const Object*
+            >>
         >
     > m;
     for (const auto &pair : this->objects) {
         const auto &id = pair.first;
         const auto &object = *(pair.second);
-        m[object.getType()][object.getScore()].insert(id);
+        m[object.getType()][object.getScore()].insert(std::make_pair(id, &object));
     }
+
     std::cout << std::endl;
     std::cout << "SCORES" << std::endl;
-    std::cout << "\"id score\" pairs, zero scores omitted" << std::endl;
-    std::cout << std::endl;
+    std::cout << "type id score actor" << std::endl;
     for (const auto &pair : m) {
         const auto &type = pair.first;
         const auto &scoresIds = pair.second;
-        bool typePrinted = false;
         for (auto it = scoresIds.rbegin(), end = scoresIds.rend(); it != end; ++it) {
             const auto &score = it->first;
             if (score != 0) {
                 const auto &ids = it->second;
-                for (const auto &id : ids) {
-                    if (!typePrinted) {
-                        std::cout << type << std::endl;
-                        typePrinted = true;
-                    }
-                    std::cout << id << " " << score << std::endl;
+                for (const auto &pair : ids) {
+                    const auto &id = pair.first;
+                    const auto &object = *(pair.second);
+                    std::cout
+                        << type << " "
+                        << id << " "
+                        << score << " "
+                        << object.getActor().getTypeStr()
+                    << std::endl;
                 }
             }
         }
-        if (typePrinted)
-            std::cout << std::endl;
     }
 }
 

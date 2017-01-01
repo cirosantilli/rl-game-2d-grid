@@ -24,3 +24,7 @@ Action FollowTypeActor::act(const WorldView &worldView) {
     }
     return a;
 }
+
+std::string FollowTypeActor::getTypeStr() const {
+    return "FollowTypeActor";
+}

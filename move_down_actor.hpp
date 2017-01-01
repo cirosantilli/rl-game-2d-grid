@@ -9,6 +9,7 @@ class WorldView;
 class MoveDownActor : public Actor {
     public:
         virtual Action act(const WorldView &worldView);
+        virtual std::string getTypeStr() const;
 };
 
 #endif

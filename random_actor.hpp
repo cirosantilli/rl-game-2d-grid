@@ -9,6 +9,7 @@ class WorldView;
 class RandomActor : public Actor {
     public:
         virtual Action act(const WorldView &worldView);
+        virtual std::string getTypeStr() const;
 };
 
 #endif

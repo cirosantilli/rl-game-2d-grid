@@ -30,3 +30,7 @@ Action RandomActor::act(const WorldView&) {
     }
     return Action(x, y);
 }
+
+std::string RandomActor::getTypeStr() const {
+    return "RandomActor";
+}

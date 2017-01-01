@@ -13,6 +13,7 @@ class FleeTypeActor : public Actor {
     public:
         FleeTypeActor(Object::Type type = Object::Type::HUMAN);
         virtual Action act(const WorldView &worldView);
+        virtual std::string getTypeStr() const;
     private:
         Object::Type type;
 };
