@@ -29,7 +29,8 @@ class World {
             bool fixedRandomSeed,
             int randomSeed,
             unsigned int nHumanPlayers,
-            std::string scenario
+            std::string scenario,
+            unsigned int timeLimit
         );
         ~World();
         void draw() const;
@@ -46,6 +47,8 @@ class World {
         /// When placing objects, prefer to put human controlled objects first,
         /// to make them easier to select from the command line.
         void init();
+        bool isGameOver() const;
+        void printScores() const;
         void reset();
         /// Update to the next world state. E.g.: what happens if two objects
         /// want to move to the same place next tick? Or if an object
@@ -79,6 +82,7 @@ class World {
             ticks,
             tileHeightPix,
             tileWidthPix,
+            timeLimit,
             width,
             windowHeightPix,
             windowWidthPix,

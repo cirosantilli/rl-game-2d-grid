@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <utility> // declval
+#include <set>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -31,7 +33,8 @@ World::World(
     bool fixedRandomSeed,
     int randomSeed,
     unsigned int nHumanPlayers,
-    std::string scenario
+    std::string scenario,
+    unsigned int timeLimit
 ) :
     display(display),
     fixedRandomSeed(fixedRandomSeed),
@@ -41,6 +44,7 @@ World::World(
     height(height),
     nHumanPlayersInitial(nHumanPlayers),
     showPlayerId(showPlayerId),
+    timeLimit(timeLimit),
     width(width),
     windowHeightPix(windowHeightPix),
     windowWidthPix(windowWidthPix)
@@ -378,7 +382,7 @@ void World::reset() {
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
     auto humanActionsIt = humanActions.begin();
-    for (auto &pair : this->objects) {
+    for (const auto &pair : this->objects) {
         auto& object = *(pair.second);
         Action action;
         auto& actor = object.getActor();
@@ -509,6 +513,50 @@ template<typename ITERATOR>
 bool World::findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const {
     int dx, dy;
     return this->findNextObjectInRectangle<ITERATOR>(it, x, y, 1, 1, dx, dy);
+}
+
+
+bool World::isGameOver() const {
+    return this->ticks == this->timeLimit;
+}
+
+void World::printScores() const {
+    std::map<
+        Object::Type,
+        std::map<
+            decltype(std::declval<Object>().getScore()),
+            std::set<objects_t::key_type>
+        >
+    > m;
+    for (const auto &pair : this->objects) {
+        const auto &id = pair.first;
+        const auto &object = *(pair.second);
+        m[object.getType()][object.getScore()].insert(id);
+    }
+    std::cout << std::endl;
+    std::cout << "SCORES" << std::endl;
+    std::cout << "\"id score\" pairs, zero scores omitted" << std::endl;
+    std::cout << std::endl;
+    for (const auto &pair : m) {
+        const auto &type = pair.first;
+        const auto &scoresIds = pair.second;
+        bool typePrinted = false;
+        for (auto it = scoresIds.rbegin(), end = scoresIds.rend(); it != end; ++it) {
+            const auto &score = it->first;
+            if (score != 0) {
+                const auto &ids = it->second;
+                for (const auto &id : ids) {
+                    if (!typePrinted) {
+                        std::cout << type << std::endl;
+                        typePrinted = true;
+                    }
+                    std::cout << id << " " << score << std::endl;
+                }
+            }
+        }
+        if (typePrinted)
+            std::cout << std::endl;
+    }
 }
 
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {

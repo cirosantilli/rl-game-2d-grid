@@ -38,7 +38,7 @@ class Object {
         unsigned int getScore() const;
         unsigned int getX() const;
         unsigned int getY() const;
-        Type getType() const;
+        auto getType() const -> Type;
         void setScore(unsigned int score);
         void setX(unsigned int x);
         void setY(unsigned int y);
@@ -47,6 +47,11 @@ class Object {
         std::unique_ptr<DrawableObject> drawableObject;
         Type type;
         unsigned int
+            /// How much can this object see.
+            /// 0 means nothing, not even itself.
+            /// 1 means just itself.
+            /// 2 means itself + the 8 adjacent squares (infinite norm).
+            /// n means sees a rectangle of width 2 * (n - 1) + 1
             fov,
             score,
             x,
@@ -55,5 +60,6 @@ class Object {
 };
 
 std::ostream& operator<<(std::ostream& os, const Object& o);
+std::ostream& operator<<(std::ostream& os, const Object::Type& t);
 
 #endif

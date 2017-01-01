@@ -138,13 +138,9 @@ static void printHelp() {
         "                 You are forced to use this if the world is so large that\n"
         "                 each tile would be less than one pixel wide.\n"
         "\n"
-        "                 If the field of view is so large that the tiles are less than\n"
-        "                 one pixel wide, then your game simply cannot be visualized.\n"
-        "\n"
         "                 You do not need to be controlling the observed player: in particular\n"
         "                 if there are 0 players to be controlled by keyboard, you can just watch\n"
         "                 the action unroll by itself.\n"
-        "\n"
         "                 You can also control one player while observing another,\n"
         "                 but you will likely go nuts.\n"
         "\n"
@@ -264,6 +260,7 @@ int main(int argc, char **argv) {
         nHumanPlayers = 1,
         randomSeed,
         showPlayerId = 0,
+        timeLimit = 100,
         width = 100,
         windowWidthPix = 500
     ;
@@ -298,6 +295,8 @@ int main(int argc, char **argv) {
                 fixedRandomSeed = true;
             } else if (std::strcmp(argv[i], "-s") == 0) {
                 scenario = argv[i + 1];
+            } else if (std::strcmp(argv[i], "-t") == 0) {
+                timeLimit = std::strtol(argv[i + 1], NULL, 10);
             } else if (std::strcmp(argv[i], "-w") == 0) {
                 width = std::strtol(argv[i + 1], NULL, 10);
 
@@ -331,7 +330,8 @@ int main(int argc, char **argv) {
         fixedRandomSeed,
         randomSeed,
         nHumanPlayers,
-        std::move(scenario)
+        std::move(scenario),
+        timeLimit
     );
 main_loop:
     if (printFps) {
@@ -351,7 +351,7 @@ main_loop:
         humanActions.push_back(std::make_unique<Action>());
     }
 
-    while (1) {
+    while (!world->isGameOver()) {
         world->draw();
         double nextTarget = last_time + targetSpf;
         decltype(humanActions.size()) currentActionIdx = 0;
@@ -436,6 +436,7 @@ main_loop:
             utils::fps_update_and_print();
         }
     }
+    world->printScores();
 quit:
     return EXIT_SUCCESS;
 }
