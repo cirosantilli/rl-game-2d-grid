@@ -164,9 +164,9 @@ static void printHelp() {
         "- `-w <int>`:    (Width) world width in tiles\n"
         "\n"
         "## Debug options"
-        "- `-F`:          (Fps) don't print FPS to stdout. May help when debugging.\n"
-        "\n"
         "- `-h`:          (help) show this help\n"
+        "\n"
+        "- `-V`:          (Verbose) Show debug and performance information.\n"
         "\n"
         "# Controls\n"
         "\n"
@@ -235,6 +235,13 @@ static void printHelp() {
         "with screen while using floating point means that multiple states map to a\n"
         "single screen after rounding.\n"
         "\n"
+        "## Non-interactive simulation\n"
+        "\n"
+        "    ./prog -t 10 -p 0 -d\n"
+        "\n"
+        "Let your AIs battle it out for 10 ticks, and at the end see all scores.\n"
+        "No human intervention or GUI, everything happens as fast as possible.\n"
+        "\n"
     ;
 }
 
@@ -248,8 +255,8 @@ int main(int argc, char **argv) {
         holdKey = false,
         immediateAction = false,
         limitFps = false,
-        printFps = true,
-        showFov = false
+        showFov = false,
+        verbose = false
     ;
     std::string scenario;
     double
@@ -301,11 +308,11 @@ int main(int argc, char **argv) {
                 width = std::strtol(argv[i + 1], NULL, 10);
 
             // Debug options.
-            } else if (std::strcmp(argv[i], "-F") == 0) {
-                printFps = !printFps;
             } else if (std::strcmp(argv[i], "-h") == 0) {
                 printHelp();
                 std::exit(EXIT_SUCCESS);
+            } else if (std::strcmp(argv[i], "-V") == 0) {
+                verbose = !verbose;
             } else {
                 printHelp();
                 std::exit(EXIT_FAILURE);
@@ -331,12 +338,10 @@ int main(int argc, char **argv) {
         randomSeed,
         nHumanPlayers,
         std::move(scenario),
-        timeLimit
+        timeLimit,
+        verbose
     );
 main_loop:
-    if (printFps) {
-        utils::fps_init();
-    }
     last_time = utils::get_secs();
 
     // Keyboard state.
@@ -429,12 +434,8 @@ main_loop:
                 )
             ;
         } while (loop);
-
         last_time = utils::get_secs();
         world->update(humanActions);
-        if (printFps) {
-            utils::fps_update_and_print();
-        }
     }
     world->printScores();
 quit:

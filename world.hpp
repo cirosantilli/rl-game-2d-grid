@@ -30,7 +30,8 @@ class World {
             int randomSeed,
             unsigned int nHumanPlayers,
             std::string scenario,
-            unsigned int timeLimit
+            unsigned int timeLimit,
+            bool verbose
         );
         ~World();
         void draw() const;
@@ -63,7 +64,8 @@ class World {
         bool
             display,
             fixedRandomSeed,
-            showFov
+            showFov,
+            verbose
         ;
         int
             randomSeed
@@ -124,10 +126,11 @@ class World {
         /// Return true iff an object is present at that position.
         template<typename ITERATOR>
         bool findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const;
-        /// Check if a given tile is empty.
-        bool isTileEmpty(unsigned int x, unsigned int y) const;
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
+        bool needFpsUpdate() const;
+        /// Check if a given tile is empty.
+        bool isTileEmpty(unsigned int x, unsigned int y) const;
 
         // Static const.
         constexpr static const unsigned int COLOR_MAX = 255;

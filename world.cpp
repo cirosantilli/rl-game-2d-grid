@@ -1,6 +1,8 @@
 #include <cstdlib>
-#include <utility> // declval
+#include <iomanip> // setprecision
 #include <set>
+#include <sstream>
+#include <utility> // declval
 
 #include <SDL2/SDL_ttf.h>
 
@@ -19,6 +21,7 @@
 #include "object_view.hpp"
 #include "random_actor.hpp"
 #include "single_texture_drawable_object.hpp"
+#include "utils.hpp"
 #include "world.hpp"
 #include "world_view.hpp"
 
@@ -34,11 +37,13 @@ World::World(
     int randomSeed,
     unsigned int nHumanPlayers,
     std::string scenario,
-    unsigned int timeLimit
+    unsigned int timeLimit,
+    bool verbose
 ) :
     display(display),
     fixedRandomSeed(fixedRandomSeed),
     showFov(showFov),
+    verbose(verbose),
     randomSeed(randomSeed),
     scenario(std::move(scenario)),
     height(height),
@@ -63,7 +68,7 @@ World::World(
         );
         SDL_SetWindowTitle(window, __FILE__);
 
-        /* TTF. */
+        // TTF.
         TTF_Init();
         this->font = TTF_OpenFont("FreeSans.ttf", 24);
         if (this->font == NULL) {
@@ -151,7 +156,7 @@ void World::draw() const {
             rect.h = this->windowHeightPix;
             SDL_RenderFillRect(this->renderer, &rect);
 
-            // Text..
+            // Text.
             rect.y = 0;
             rect.h = 0;
             SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
@@ -159,6 +164,13 @@ void World::draw() const {
             World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(worldView->getScore()).c_str(), this->font, &rect, &color);
             World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "time", this->font, &rect, &color);
             World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
+
+            // FPS.
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "FPS", this->font, &rect, &color);
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(3) << utils::fps_get();
+            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, stream.str().c_str(), this->font, &rect, &color);
+
             SDL_RenderPresent(this->renderer);
         }
     }
@@ -177,6 +189,12 @@ void World::init() {
         this->randomSeed = std::time(NULL);
     }
     std::srand(this->randomSeed);
+    if (this->verbose) {
+        std::cout << "randomSeed " << randomSeed << '\n';
+    }
+    if (this->needFpsUpdate()) {
+        utils::fps_init();
+    }
 
     this->ticks = 0;
     this->nHumanActions = 0;
@@ -209,7 +227,95 @@ void World::init() {
         createSolidTexture(0, World::COLOR_MAX / 2, World::COLOR_MAX, 0);
     }
 
-    if (this->scenario == "plants") {
+    if (this->scenario == "debug") {
+        // Place objects.
+        this->createSingleTextureObject(
+            this->getWidth() / 2,
+            this->getHeight() / 2,
+            Object::Type::HUMAN,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        // TODO use nHumanPlayers
+        //if (this->multiHumanPlayer) {
+            //this->createSingleTextureObject(
+                //(this->getWidth() / 2) + 1,
+                //(this->getHeight() / 2) + 1,
+                //Object::Type::HUMAN,
+                //std::make_unique<HumanActor>(),
+                //fov,
+                //1
+            //);
+        //}
+        this->createSingleTextureObject(
+            this->getWidth() / 4,
+            this->getHeight() / 4,
+            Object::Type::RANDOM,
+            std::make_unique<RandomActor>(),
+            0,
+            2
+        );
+        this->createSingleTextureObject(
+            3 * this->getWidth() / 4,
+            this->getHeight() / 4,
+            Object::Type::FOLLOW_HUMAN,
+            std::make_unique<FollowTypeActor>(),
+            fov,
+            3
+        );
+        this->createSingleTextureObject(
+            3 * this->getWidth() / 4,
+            3 * this->getHeight() / 4,
+            Object::Type::FLEE_HUMAN,
+            std::make_unique<FleeTypeActor>(),
+            fov,
+            4
+        );
+        this->createSingleTextureObject(
+            this->getWidth() / 4,
+            3 * this->getHeight() / 4,
+            Object::Type::DO_NOTHING,
+            std::make_unique<DoNothingActor>(),
+            0,
+            5
+        );
+        for (unsigned int y = 0; y < this->height; ++y) {
+            for (unsigned int x = 0; x < this->width; ++x) {
+                unsigned int sum = x + y;
+                if (sum % 5 == 0) {
+                    this->createSingleTextureObject(x, y, Object::Type::MOVE_UP, std::make_unique<MoveUpActor>(), fov, 6);
+                } else if (sum % 7 == 0) {
+                    this->createSingleTextureObject(x, y, Object::Type::MOVE_DOWN, std::make_unique<MoveDownActor>(), fov, 7);
+                }
+            }
+        }
+    } else if (this->scenario == "plants-debug") {
+        this->createSingleTextureObject(
+            10,
+            10,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        this->createSingleTextureObject(
+            14,
+            10,
+            Object::Type::WALL,
+            std::make_unique<DoNothingActor>(),
+            0,
+            2
+        );
+        this->createSingleTextureObject(
+            0,
+            0,
+            Object::Type::WALL,
+            std::make_unique<DoNothingActor>(),
+            0,
+            2
+        );
+    } else {
         // Place human players.
         {
             decltype(this->nHumanPlayersInitial) totalPlayers = 0;
@@ -280,94 +386,6 @@ void World::init() {
         for (unsigned int x = 0; x < this->width; ++x) {
             this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
             this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-        }
-    } else if (this->scenario == "plants-debug") {
-        this->createSingleTextureObject(
-            10,
-            10,
-            Object::Type::PLANT_EATER,
-            std::make_unique<HumanActor>(),
-            fov,
-            0
-        );
-        this->createSingleTextureObject(
-            14,
-            10,
-            Object::Type::WALL,
-            std::make_unique<DoNothingActor>(),
-            0,
-            2
-        );
-        this->createSingleTextureObject(
-            0,
-            0,
-            Object::Type::WALL,
-            std::make_unique<DoNothingActor>(),
-            0,
-            2
-        );
-    } else {
-        // Place objects.
-        this->createSingleTextureObject(
-            this->getWidth() / 2,
-            this->getHeight() / 2,
-            Object::Type::HUMAN,
-            std::make_unique<HumanActor>(),
-            fov,
-            0
-        );
-        // TODO use nHumanPlayers
-        //if (this->multiHumanPlayer) {
-            //this->createSingleTextureObject(
-                //(this->getWidth() / 2) + 1,
-                //(this->getHeight() / 2) + 1,
-                //Object::Type::HUMAN,
-                //std::make_unique<HumanActor>(),
-                //fov,
-                //1
-            //);
-        //}
-        this->createSingleTextureObject(
-            this->getWidth() / 4,
-            this->getHeight() / 4,
-            Object::Type::RANDOM,
-            std::make_unique<RandomActor>(),
-            0,
-            2
-        );
-        this->createSingleTextureObject(
-            3 * this->getWidth() / 4,
-            this->getHeight() / 4,
-            Object::Type::FOLLOW_HUMAN,
-            std::make_unique<FollowTypeActor>(),
-            fov,
-            3
-        );
-        this->createSingleTextureObject(
-            3 * this->getWidth() / 4,
-            3 * this->getHeight() / 4,
-            Object::Type::FLEE_HUMAN,
-            std::make_unique<FleeTypeActor>(),
-            fov,
-            4
-        );
-        this->createSingleTextureObject(
-            this->getWidth() / 4,
-            3 * this->getHeight() / 4,
-            Object::Type::DO_NOTHING,
-            std::make_unique<DoNothingActor>(),
-            0,
-            5
-        );
-        for (unsigned int y = 0; y < this->height; ++y) {
-            for (unsigned int x = 0; x < this->width; ++x) {
-                unsigned int sum = x + y;
-                if (sum % 5 == 0) {
-                    this->createSingleTextureObject(x, y, Object::Type::MOVE_UP, std::make_unique<MoveUpActor>(), fov, 6);
-                } else if (sum % 7 == 0) {
-                    this->createSingleTextureObject(x, y, Object::Type::MOVE_DOWN, std::make_unique<MoveDownActor>(), fov, 7);
-                }
-            }
         }
     }
 }
@@ -440,6 +458,14 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
 
     }
     this->ticks++;
+
+    // FPS.
+    if (this->needFpsUpdate()) {
+        utils::fps_update();
+    }
+    if (this->verbose) {
+        std::printf("FPS = %f\n", utils::fps_get());
+    }
 }
 
 unsigned int World::getHeight() const { return this->height; }
@@ -452,6 +478,10 @@ unsigned int World::getWidth() const { return this->width; }
 unsigned int World::getViewHeight() const { return this->viewHeight; }
 
 bool World::getShowFov() const { return this->showFov; }
+
+bool World::needFpsUpdate() const {
+    return this->verbose || this->display;
+}
 
 SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a) {
     int pitch = 0;
@@ -537,8 +567,10 @@ void World::printScores() const {
         m[object.getType()][object.getScore()].insert(std::make_pair(id, &object));
     }
 
-    std::cout << std::endl;
-    std::cout << "SCORES" << std::endl;
+    if (this->verbose) {
+        std::cout << std::endl;
+        std::cout << "scores" << std::endl;
+    }
     std::cout << "type id score actor" << std::endl;
     for (const auto &pair : m) {
         const auto &type = pair.first;

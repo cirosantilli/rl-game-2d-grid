@@ -6,19 +6,22 @@ namespace utils {
     }
 
     const double FPS_GRANULARITY_S = 0.5;
-    double fps_last_time_s;
+    double fps_last_time_s, fps;
     unsigned int fps_nframes;
+    double fps_get() {
+        return fps;
+    }
     void fps_init() {
         fps_nframes = 0;
         fps_last_time_s = get_secs();
     }
-    void fps_update_and_print() {
+    void fps_update() {
         double dt, current_time_s;
         current_time_s = get_secs();
         fps_nframes++;
         dt = current_time_s - fps_last_time_s;
         if (dt > FPS_GRANULARITY_S) {
-            std::printf("FPS = %f\n", fps_nframes / dt);
+            fps = fps_nframes / dt;
             fps_last_time_s = current_time_s;
             fps_nframes = 0;
         }
