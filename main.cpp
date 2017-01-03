@@ -447,7 +447,7 @@ main_loop:
         lastTime = utils::get_secs();
         world->update(humanActions);
     }
-    world->printScores();
 quit:
+    world->printScores();
     return EXIT_SUCCESS;
 }

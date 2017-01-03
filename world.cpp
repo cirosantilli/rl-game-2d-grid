@@ -168,7 +168,7 @@ void World::draw() const {
             // FPS.
             World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "FPS", this->font, &rect, &color);
             std::stringstream stream;
-            stream << std::fixed << std::setprecision(3) << utils::fps_get();
+            stream << std::fixed << std::setprecision(3) << utils::fps::get();
             World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, stream.str().c_str(), this->font, &rect, &color);
 
             SDL_RenderPresent(this->renderer);
@@ -193,7 +193,7 @@ void World::init() {
         std::cout << "randomSeed " << randomSeed << '\n';
     }
     if (this->needFpsUpdate()) {
-        utils::fps_init();
+        utils::fps::init();
     }
 
     this->ticks = 0;
@@ -476,10 +476,10 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
 
     // FPS.
     if (this->needFpsUpdate()) {
-        utils::fps_update();
+        utils::fps::update();
     }
     if (this->verbose) {
-        std::printf("FPS = %f\n", utils::fps_get());
+        utils::fps::print();
     }
 }
 
@@ -559,7 +559,6 @@ bool World::findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const
     int dx, dy;
     return this->findNextObjectInRectangle<ITERATOR>(it, x, y, 1, 1, dx, dy);
 }
-
 
 bool World::isGameOver() const {
     return this->ticks == (unsigned int)this->timeLimit;

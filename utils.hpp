@@ -7,13 +7,12 @@
 namespace utils {
     double get_secs(void);
 
-    // FPS.
-    extern const double FPS_GRANULARITY_S;
-    extern double fps_last_time_s;
-    extern unsigned int fps_nframes;
-    double fps_get();
-    void fps_init();
-    void fps_update();
+    namespace fps {
+        double get();
+        void init();
+        void print();
+        void update();
+    }
 }
 
 #endif
