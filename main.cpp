@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
     ;
 
     // Treat CLI arguments.
-    for (decltype(argc) i = 0; i < argc; ++i) {
+    for (decltype(argc) i = 1; i < argc; ++i) {
         if (argv[i][0] == '-') {
 
             // Interactive play options.
@@ -287,28 +287,35 @@ int main(int argc, char **argv) {
             } else if (std::strcmp(argv[i], "-f") == 0) {
                 limitFps = !limitFps;
                 targetFps = std::strtod(argv[i + 1], NULL);
+                i++;
             } else if (std::strcmp(argv[i], "-H") == 0) {
                 holdKey = !holdKey;
             } else if (std::strcmp(argv[i], "-i") == 0) {
                 immediateAction = !immediateAction;
             } else if (std::strcmp(argv[i], "-v") == 0) {
                 showPlayerId = std::strtol(argv[i + 1], NULL, 10);
+                i++;
                 showFov = true;
             } else if (std::strcmp(argv[i], "-W") == 0) {
                 windowWidthPix = std::strtol(argv[i + 1], NULL, 10);
+                i++;
 
             // World state options.
             } else if (std::strcmp(argv[i], "-p") == 0) {
                 nHumanPlayers = std::strtol(argv[i + 1], NULL, 10);
+                i++;
             } else if (std::strcmp(argv[i], "-r") == 0) {
                 randomSeed = std::strtol(argv[i + 1], NULL, 10);
+                i++;
                 fixedRandomSeed = true;
             } else if (std::strcmp(argv[i], "-s") == 0) {
                 scenario = argv[i + 1];
             } else if (std::strcmp(argv[i], "-t") == 0) {
                 timeLimit = std::strtol(argv[i + 1], NULL, 10);
+                i++;
             } else if (std::strcmp(argv[i], "-w") == 0) {
                 width = std::strtol(argv[i + 1], NULL, 10);
+                i++;
 
             // Debug options.
             } else if (std::strcmp(argv[i], "-h") == 0) {
