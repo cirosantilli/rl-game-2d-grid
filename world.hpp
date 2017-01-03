@@ -30,7 +30,7 @@ class World {
             int randomSeed,
             unsigned int nHumanPlayers,
             std::string scenario,
-            unsigned int timeLimit,
+            int timeLimit,
             bool verbose
         );
         ~World();
@@ -68,7 +68,8 @@ class World {
             verbose
         ;
         int
-            randomSeed
+            randomSeed,
+            timeLimit
         ;
         std::string scenario;
         unsigned int
@@ -84,7 +85,6 @@ class World {
             ticks,
             tileHeightPix,
             tileWidthPix,
-            timeLimit,
             width,
             windowHeightPix,
             windowWidthPix,

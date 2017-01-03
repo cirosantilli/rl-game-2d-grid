@@ -161,6 +161,9 @@ static void printHelp() {
         "                 This is the only source of randomness in the whole engine.\n"
         "                 Fixing it to a given value gives reproducible games.\n"
         "\n"
+        "- `-t`:          (Time limit) stop simulation after this many steps.\n"
+        "                 -1 means infinite. Default: -1.\n"
+        "\n"
         "- `-w <int>`:    (Width) world width in tiles\n"
         "\n"
         "## Debug options"
@@ -261,13 +264,13 @@ int main(int argc, char **argv) {
     std::string scenario;
     double
         targetFps = 1.0,
-        last_time;
+        lastTime;
     ;
+    int timeLimit = -1;
     unsigned int
         nHumanPlayers = 1,
         randomSeed,
         showPlayerId = 0,
-        timeLimit = 100,
         width = 100,
         windowWidthPix = 500
     ;
@@ -342,7 +345,7 @@ int main(int argc, char **argv) {
         verbose
     );
 main_loop:
-    last_time = utils::get_secs();
+    lastTime = utils::get_secs();
 
     // Keyboard state.
     int numkeys;
@@ -358,7 +361,7 @@ main_loop:
 
     while (!world->isGameOver()) {
         world->draw();
-        double nextTarget = last_time + targetSpf;
+        double nextTarget = lastTime + targetSpf;
         decltype(humanActions.size()) currentActionIdx = 0;
         bool needMoreHumanActions = currentActionIdx < world->getNHumanActions();
         for (auto &action : humanActions) {
@@ -434,7 +437,7 @@ main_loop:
                 )
             ;
         } while (loop);
-        last_time = utils::get_secs();
+        lastTime = utils::get_secs();
         world->update(humanActions);
     }
     world->printScores();

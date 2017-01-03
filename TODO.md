@@ -25,3 +25,4 @@
 -   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
 -   non-uniform spacial distributions of plants and plant eaters
 -   some condition where collaboration leads to victory vs desire to betray friends
+-   only spawn new plants next to existing ones. This would create agriculture logistics.

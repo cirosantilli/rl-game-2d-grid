@@ -37,7 +37,7 @@ World::World(
     int randomSeed,
     unsigned int nHumanPlayers,
     std::string scenario,
-    unsigned int timeLimit,
+    int timeLimit,
     bool verbose
 ) :
     display(display),
@@ -45,11 +45,11 @@ World::World(
     showFov(showFov),
     verbose(verbose),
     randomSeed(randomSeed),
+    timeLimit(timeLimit),
     scenario(std::move(scenario)),
     height(height),
     nHumanPlayersInitial(nHumanPlayers),
     showPlayerId(showPlayerId),
-    timeLimit(timeLimit),
     width(width),
     windowHeightPix(windowHeightPix),
     windowWidthPix(windowWidthPix)
@@ -400,6 +400,8 @@ void World::reset() {
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
     auto humanActionsIt = humanActions.begin();
+
+    // Update existing objects.
     for (const auto &pair : this->objects) {
         auto& object = *(pair.second);
         Action action;
@@ -457,6 +459,19 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
         }
 
     }
+
+    // Spawn new objects.
+    {
+        // Plants
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                }
+            }
+        }
+    }
+
     this->ticks++;
 
     // FPS.
@@ -547,7 +562,7 @@ bool World::findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const
 
 
 bool World::isGameOver() const {
-    return this->ticks == this->timeLimit;
+    return this->ticks == (unsigned int)this->timeLimit;
 }
 
 void World::printScores() const {
