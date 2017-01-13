@@ -46,6 +46,17 @@ class Object {
         void setScore(unsigned int score);
         void setX(unsigned int x);
         void setY(unsigned int y);
+
+        // Types.
+        struct PointerCmp {
+            // Required for the heterogeneous searches to be found by compiler.
+            // Value does not seem to matter, only presence, but std::true_type is a good choice semantically.
+            typedef std::true_type is_transparent;
+            typedef std::unique_ptr<Object> T;
+            bool operator()(const T& c, unsigned int id) const;
+            bool operator()(unsigned int id, const T& c) const;
+            bool operator()(const T& lhs, const T& rhs) const;
+        };
     protected:
         std::unique_ptr<Actor> actor;
         std::unique_ptr<DrawableObject> drawableObject;

@@ -39,6 +39,12 @@ void Object::setScore(unsigned int score) { this->score = score; }
 void Object::setX(unsigned int x) { this->x = x; }
 void Object::setY(unsigned int y) { this->y = y; }
 
+bool Object::PointerCmp::operator()(const T& c, unsigned int id) const { return c->getId() < id; }
+bool Object::PointerCmp::operator()(unsigned int id, const T& c) const { return id < c->getId(); }
+bool Object::PointerCmp::operator()(const T& lhs, const T& rhs) const {
+    return lhs->getId() < rhs->getId();
+}
+
 std::ostream& operator<<(std::ostream& os, const Object& o) {
     return os
         << "Object"

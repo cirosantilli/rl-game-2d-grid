@@ -2,6 +2,7 @@
 #define WORLD_HPP
 
 #include <ctime>
+#include <set>
 #include <map>
 #include <memory>
 #include <string>
@@ -64,6 +65,7 @@ class World {
         // Types
         /// id -> object.
         typedef std::map<unsigned int, std::unique_ptr<Object>> objects_t;
+        //typedef std::set<std::unique_ptr<Object>, Object::PointerCmp> objects_t;
         typedef std::vector<SDL_Texture*> textures_t;
 
         // Boost types.
