@@ -12,12 +12,14 @@ Object::Object(
     Type type,
     std::unique_ptr<Actor> actor,
     unsigned int fov,
-    std::unique_ptr<DrawableObject> drawableObject
+    std::unique_ptr<DrawableObject> drawableObject,
+    unsigned int id
 ) :
     actor(std::move(actor)),
     drawableObject(std::move(drawableObject)),
     type(type),
     fov(fov),
+    id(id),
     score(0),
     x(x),
     y(y)
@@ -28,6 +30,7 @@ void Object::draw(const World& world, int cameraX, int cameraY) const {
 }
 Actor& Object::getActor() const { return *this->actor; }
 unsigned int Object::getFov() const { return this->fov; }
+unsigned int Object::getId() const { return this->id; }
 unsigned int Object::getScore() const { return this->score; }
 auto Object::getType() const -> Type { return this->type; }
 unsigned int Object::getX() const { return this->x; }

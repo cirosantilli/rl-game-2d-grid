@@ -448,19 +448,18 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
                 shouldMove = true;
                 object.setScore(object.getScore() + 1);
-                this->objects.erase(it);
+                this->deleteObject(it);
             }
         } else {
             shouldMove = true;
         }
         if (shouldMove) {
-            object.setX(x);
-            object.setY(y);
+            this->updatePosition(object, x, y);
         }
 
     }
 
-    // Spawn new objects.
+    // Spawn new objects randomly.
     {
         // Plants
         for (unsigned int y = 1; y < this->height - 1; ++y) {
@@ -540,7 +539,6 @@ bool World::findNextObjectInRectangle(
     int& dx,
     int& dy
 ) const {
-    // TODO: use quadtree
     auto const end = this->objects.end();
     while (it != end) {
         auto const& object = *(it->second);
@@ -627,6 +625,11 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews), object.getScore());
 }
 
+void World::createObject(std::unique_ptr<Object> object) {
+    this->rtree.insert(object.get());
+    this->objects.emplace(object->getId(), std::move(object));
+}
+
 void World::createSingleTextureObject(
     unsigned int x,
     unsigned int y,
@@ -644,13 +647,35 @@ void World::createSingleTextureObject(
     if (actor->takesHumanAction()) {
         this->nHumanActions++;
     }
-    auto object = std::make_unique<Object>(x, y, type, std::move(actor), fov, std::move(drawableObject));
+    this->createObject(std::make_unique<Object>(
+        x,
+        y,
+        type,
+        std::move(actor),
+        fov,
+        std::move(drawableObject),
+        this->getNextFreeObjectId()
+    ));
+}
+
+void World::deleteObject(objects_t::iterator& it) {
+    assert(this->rtree.remove(it->second.get()) == 1);
+    this->objects.erase(it);
+}
+void World::updatePosition(Object& object, unsigned int x, unsigned int y) {
+    this->rtree.remove(&object);
+    object.setX(x);
+    object.setY(y);
+    this->rtree.insert(&object);
+}
+
+World::objects_t::key_type World::getNextFreeObjectId() {
     auto rbegin = this->objects.rbegin();
     objects_t::key_type id;
     if (rbegin != this->objects.rend()) {
-        id = this->objects.rbegin()->first + 1;
+        id = rbegin->first + 1;
     } else {
         id = 0;
     }
-    this->objects.emplace(id, std::move(object));
+    return id;
 }

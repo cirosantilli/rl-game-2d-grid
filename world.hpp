@@ -9,12 +9,17 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <boost/geometry.hpp>
 
 #include "object.hpp"
 
 class Action;
 class ObjectView;
 class WorldView;
+
+// TODO make local to class.
+namespace bg = boost::geometry;
+namespace bgi = bg::index;
 
 class World {
     public:
@@ -57,8 +62,13 @@ class World {
         void update(const std::vector<std::unique_ptr<Action>> &humanActions);
     private:
         // Types
+        /// id -> object.
         typedef std::map<unsigned int, std::unique_ptr<Object>> objects_t;
         typedef std::vector<SDL_Texture*> textures_t;
+
+        // Boost types.
+        typedef bg::model::box<Object> Box;
+        typedef bgi::rtree<Object*, bgi::linear<16>> Rtree;
 
         // Data.
         bool
@@ -92,6 +102,7 @@ class World {
         ;
         SDL_Renderer *renderer;
         SDL_Window *window;
+        Rtree rtree;
         TTF_Font *font;
         objects_t objects;
         std::vector<SDL_Texture *> textures;
@@ -99,6 +110,9 @@ class World {
         // Methods.
         SDL_Texture * createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a);
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
+        /// Should always be used for object creation instead of raw insertion into data types,
+        /// ince a single insertion may require multiple index updates.
+        void createObject(std::unique_ptr<Object> object);
         void createSingleTextureObject(
             unsigned int x,
             unsigned int y,
@@ -107,6 +121,7 @@ class World {
             unsigned int fov,
             textures_t::size_type textureId
         );
+        void deleteObject(objects_t::iterator& it);
         template<typename ITERATOR>
         bool findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const;
         /// Advance iterator until the next object in the FOV of object, including it itself.
@@ -126,11 +141,13 @@ class World {
         /// Return true iff an object is present at that position.
         template<typename ITERATOR>
         bool findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const;
+        objects_t::key_type getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
         bool needFpsUpdate() const;
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
+        void updatePosition(Object& object, unsigned int x, unsigned int y);
 
         // Static const.
         constexpr static const unsigned int COLOR_MAX = 255;
