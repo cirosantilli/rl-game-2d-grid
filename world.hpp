@@ -3,7 +3,6 @@
 
 #include <ctime>
 #include <set>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -63,9 +62,7 @@ class World {
         void update(const std::vector<std::unique_ptr<Action>> &humanActions);
     private:
         // Types
-        /// id -> object.
-        typedef std::map<unsigned int, std::unique_ptr<Object>> objects_t;
-        //typedef std::set<std::unique_ptr<Object>, Object::PointerCmp> objects_t;
+        typedef std::set<std::unique_ptr<Object>, Object::PointerCmp> objects_t;
         typedef std::vector<SDL_Texture*> textures_t;
 
         // Boost types.
@@ -143,7 +140,7 @@ class World {
         /// Return true iff an object is present at that position.
         template<typename ITERATOR>
         bool findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const;
-        objects_t::key_type getNextFreeObjectId();
+        unsigned int getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
         bool needFpsUpdate() const;

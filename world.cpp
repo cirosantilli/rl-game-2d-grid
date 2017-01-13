@@ -126,7 +126,7 @@ void World::draw() const {
         SDL_RenderClear(this->renderer);
         auto it = this->objects.begin();
         int dx, dy;
-        auto const& showObject = *(this->objects.find(this->showPlayerId)->second);
+        auto const& showObject = **(this->objects.find(this->showPlayerId));
         auto worldView = createWorldView(showObject);
         if (this->getShowFov()) {
             auto cameraX = showObject.getX() - showObject.getFov() + 1;
@@ -134,13 +134,12 @@ void World::draw() const {
             // TODO: loop over existing world view here,
             // to keep as close as possible to actual observable state.
             while (this->findNextObjectInFov<decltype(it)>(it, showObject, dx, dy)) {
-                auto const& otherObject = *(it->second);
-                otherObject.draw(*this, cameraX, cameraY);
+                (*it)->draw(*this, cameraX, cameraY);
                 it++;
             }
         } else {
-            for (auto const& pair : this->objects) {
-                pair.second->draw(*this);
+            for (auto const& object : this->objects) {
+                object->draw(*this);
             }
         }
 
@@ -402,19 +401,18 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
     auto humanActionsIt = humanActions.begin();
 
     // Update existing objects.
-    for (const auto &pair : this->objects) {
-        auto& object = *(pair.second);
+    for (const auto &object : this->objects) {
         Action action;
-        auto& actor = object.getActor();
+        auto& actor = object->getActor();
         if (actor.takesHumanAction()) {
             action = **humanActionsIt;
             humanActionsIt++;
         } else {
-            action = actor.act(*createWorldView(object));
+            action = actor.act(*createWorldView(*object));
         }
 
-        auto x = object.getX();
-        auto y = object.getY();
+        auto x = object->getX();
+        auto y = object->getY();
 
         // X
         if (action.getMoveX() == Action::MoveX::LEFT) {
@@ -440,21 +438,21 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
 
         auto it = this->objects.begin();
         bool tileNonEmpty = this->findObjectAtTile(it, x, y);
-        auto& objectAtTarget = *(it->second);
+        auto& objectAtTarget = *it;
         bool shouldMove = false;
         if (tileNonEmpty) {
-            auto objectType = object.getType();
-            auto targetType = objectAtTarget.getType();
+            auto objectType = object->getType();
+            auto targetType = objectAtTarget->getType();
             if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
                 shouldMove = true;
-                object.setScore(object.getScore() + 1);
+                object->setScore(object->getScore() + 1);
                 this->deleteObject(it);
             }
         } else {
             shouldMove = true;
         }
         if (shouldMove) {
-            this->updatePosition(object, x, y);
+            this->updatePosition(*object, x, y);
         }
 
     }
@@ -541,7 +539,7 @@ bool World::findNextObjectInRectangle(
 ) const {
     auto const end = this->objects.end();
     while (it != end) {
-        auto const& object = *(it->second);
+        auto const& object = **it;
         dx = (int)object.getX() - (int)centerX;
         dy = (int)object.getY() - (int)centerY;
         if (std::abs(dx) < (int)width && std::abs(dy) < (int)height) {
@@ -568,15 +566,13 @@ void World::printScores() const {
         std::map<
             decltype(std::declval<Object>().getScore()),
             std::set<std::pair<
-                objects_t::key_type,
+                unsigned int,
                 const Object*
             >>
         >
     > m;
-    for (const auto &pair : this->objects) {
-        const auto &id = pair.first;
-        const auto &object = *(pair.second);
-        m[object.getType()][object.getScore()].insert(std::make_pair(id, &object));
+    for (const auto &object : this->objects) {
+        m[object->getType()][object->getScore()].insert(std::make_pair(object->getId(), object.get()));
     }
 
     if (this->verbose) {
@@ -616,9 +612,9 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     auto it = this->objects.begin();
     int dx, dy;
     while (this->findNextObjectInFov<decltype(it)>(it, object, dx, dy)) {
-        auto const& otherObject = *(it->second);
+        auto const& otherObject = *it;
         objectViews->push_back(std::make_unique<ObjectView>(
-            dx, dy, otherObject.getType()
+            dx, dy, otherObject->getType()
         ));
         it++;
     }
@@ -627,7 +623,7 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
 
 void World::createObject(std::unique_ptr<Object> object) {
     this->rtree.insert(object.get());
-    this->objects.emplace(object->getId(), std::move(object));
+    this->objects.insert(std::move(object));
 }
 
 void World::createSingleTextureObject(
@@ -659,7 +655,7 @@ void World::createSingleTextureObject(
 }
 
 void World::deleteObject(objects_t::iterator& it) {
-    assert(this->rtree.remove(it->second.get()) == 1);
+    assert(this->rtree.remove(it->get()) == 1);
     this->objects.erase(it);
 }
 void World::updatePosition(Object& object, unsigned int x, unsigned int y) {
@@ -669,11 +665,11 @@ void World::updatePosition(Object& object, unsigned int x, unsigned int y) {
     this->rtree.insert(&object);
 }
 
-World::objects_t::key_type World::getNextFreeObjectId() {
+unsigned int World::getNextFreeObjectId() {
     auto rbegin = this->objects.rbegin();
-    objects_t::key_type id;
+    unsigned int id;
     if (rbegin != this->objects.rend()) {
-        id = rbegin->first + 1;
+        id = (*rbegin)->getId() + 1;
     } else {
         id = 0;
     }
