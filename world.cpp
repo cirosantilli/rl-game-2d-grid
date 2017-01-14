@@ -524,9 +524,8 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             }
         }
 
-        auto it = this->objects.begin();
-        bool tileNonEmpty = this->findObjectAtTile(it, x, y);
-        auto& objectAtTarget = *it;
+        Object *objectAtTarget;
+        bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
         bool shouldMove = false;
         if (tileNonEmpty) {
             auto objectType = object->getType();
@@ -534,7 +533,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
                 shouldMove = true;
                 object->setScore(object->getScore() + 1);
-                this->deleteObject(it);
+                this->deleteObject(objectAtTarget);
             }
         } else {
             shouldMove = true;
@@ -602,61 +601,37 @@ SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned
     return texture;
 }
 
-template<typename ITERATOR>
-bool World::findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const {
-    return this->findNextObjectInRectangle<ITERATOR>(
-        it,
-        object.getX(),
-        object.getY(),
-        object.getFov(),
-        object.getFov(),
-        dx,
-        dy
-    );
-}
-
 World::Rtree::const_query_iterator World::queryObjectsInFov(const Object& object) const {
     auto fov = object.getFov();
-    if (fov == 0) {
+    return this->queryObjectsInRectangle(object.getX(), object.getY(), fov, fov);
+}
+
+World::Rtree::const_query_iterator World::queryObjectsInRectangle(
+    unsigned int centerX,
+    unsigned int centerY,
+    unsigned int width,
+    unsigned int height
+) const {
+    if (width == 0 || height == 0) {
         return rtree.qend();
     } else {
-        auto x = object.getX();
-        auto y = object.getY();
-        fov--;
+        width--;
+        height--;
         return this->rtree.qbegin(bgi::intersects(QueryBox(
-            QueryPoint(x - fov, y - fov),
-            QueryPoint(x + fov, y + fov)
+            QueryPoint(centerX - width, centerY - height),
+            QueryPoint(centerX + width, centerY + height)
         )));
     }
 }
 
-template<typename ITERATOR>
-bool World::findNextObjectInRectangle(
-    ITERATOR& it,
-    unsigned int centerX,
-    unsigned int centerY,
-    unsigned int width,
-    unsigned int height,
-    int& dx,
-    int& dy
-) const {
-    auto const end = this->objects.end();
-    while (it != end) {
-        auto const& object = **it;
-        dx = (int)object.getX() - (int)centerX;
-        dy = (int)object.getY() - (int)centerY;
-        if (std::abs(dx) < (int)width && std::abs(dy) < (int)height) {
-            return true;
-        }
-        it++;
+bool World::findObjectAtTile(Object **object, unsigned int x, unsigned int y) const {
+    auto it = this->queryObjectsInRectangle(x, y, 1, 1);
+    if (it == this->rtree.qend()) {
+        return false;
+    } else {
+        *object = *it;
+        return true;
     }
-    return false;
-}
-
-template<typename ITERATOR>
-bool World::findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const {
-    int dx, dy;
-    return this->findNextObjectInRectangle<ITERATOR>(it, x, y, 1, 1, dx, dy);
 }
 
 bool World::isGameOver() const {
@@ -706,10 +681,8 @@ void World::printScores() const {
 }
 
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {
-    // TODO rm
-    //return this->rtree.qbegin(bgi::intersects(bg::model::point<int, 2, bg::cs::cartesian>(x, y))) == this->rtree.qend();
-    auto it = this->objects.begin();
-    return !this->findObjectAtTile<decltype(it)>(it, x, y);
+    Object *object;
+    return !this->findObjectAtTile(&object, x, y);
 }
 
 std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
@@ -761,9 +734,9 @@ void World::createSingleTextureObject(
     ));
 }
 
-void World::deleteObject(objects_t::iterator& it) {
-    assert(this->rtree.remove(it->get()) == 1);
-    this->objects.erase(it);
+void World::deleteObject(Object *object) {
+    assert(this->rtree.remove(object) == 1);
+    this->objects.erase(this->objects.find(object->getId()));
 }
 void World::updatePosition(Object& object, unsigned int x, unsigned int y) {
     this->rtree.remove(&object);

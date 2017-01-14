@@ -122,26 +122,11 @@ class World {
             unsigned int fov,
             textures_t::size_type textureId
         );
-        void deleteObject(objects_t::iterator& it);
-        template<typename ITERATOR>
-        bool findNextObjectInFov(objects_t::const_iterator& it, const Object& object, int& dx, int& dy) const;
-        /// Advance iterator until the next object in the FOV of object, including it itself.
-        /// Return true if such object exists, false if there are no more.
-        /// The caller is responsible for incrementing the pointer to ask for the next object.
-        template<typename ITERATOR>
-        bool findNextObjectInRectangle(
-            ITERATOR& it,
-            unsigned int centerX,
-            unsigned int centerY,
-            unsigned int width,
-            unsigned int height,
-            int& dx,
-            int& dy
-        ) const;
-        /// Make iterator point to the object at a given tile.
+        void deleteObject(Object *object);
+        /// Make object point to the object at a given tile if one is present.
+        /// Don't change it otherwise.
         /// Return true iff an object is present at that position.
-        template<typename ITERATOR>
-        bool findObjectAtTile(ITERATOR& it, unsigned int x, unsigned int y) const;
+        bool findObjectAtTile(Object **object, unsigned int x, unsigned int y) const;
         unsigned int getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
@@ -149,6 +134,12 @@ class World {
         bool isTileEmpty(unsigned int x, unsigned int y) const;
         bool needFpsUpdate() const;
         Rtree::const_query_iterator queryObjectsInFov(const Object& object) const;
+        Rtree::const_query_iterator queryObjectsInRectangle(
+            unsigned int centerX,
+            unsigned int centerY,
+            unsigned int width,
+            unsigned int height
+        ) const;
         void updatePosition(Object& object, unsigned int x, unsigned int y);
 
         // Static const.

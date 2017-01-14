@@ -119,7 +119,9 @@ static void printHelp() {
         "                 to give different controls to different players (the only two design\n"
         "                 choices are: affect only first or affect all equally, and we chose N.1).\n"
         "\n"
-        "- `-i`:          (Immediate) mode. Create action immediately whenever the user presses any key,\n"
+        "- `-i`:          (toggle Immediate) mode. Default: on.\n"
+        "\n"
+        "                 If on, create action immediately whenever the user presses any key,\n"
         "                 without waiting for `SPACE` to be pressed.\n"
         "\n"
         "                 Makes game more interactive, and less precisely controllable.\n"
@@ -161,7 +163,7 @@ static void printHelp() {
         "- `-t`:          (Time limit) stop simulation after this many steps.\n"
         "                 -1 means infinite. Default: -1.\n"
         "\n"
-        "- `-w <int>`:    (Width) world width in tiles\n"
+        "- `-w <int>`:    (Width) world width in tiles. Default: 20.\n"
         "\n"
         "## Debug options"
         "- `-h`:          (help) show this help\n"
@@ -177,13 +179,13 @@ static void printHelp() {
         "- `R`: restart from initial state with a new random seed\n"
         "- `SHIFT + R`: like R, but reuse the last random seed\n"
         "- `UP` / `DOWN` / `LEFT` / `RIGHT` arrow keys: move\n"
-        "- `SPACE`: step simulation if neither or -i or \"-b -H\" are given\n"
+        "- `SPACE`: step simulation if -i is given and \"-b -H\" is not\n"
         "\n"
         "# Examples\n"
         "\n"
         "## Rogue-like TAS mode\n"
         "\n"
-        "    ./prog\n"
+        "    ./prog -i\n"
         "\n"
         "If a player controller is present,\n"
         "then the world blocks until player makes a move (`SPACE`).\n"
@@ -218,19 +220,19 @@ static void printHelp() {
         "\n"
         "## Rogue mode\n"
         "\n"
-        "    ./prog -i\n"
+        "    ./prog\n"
         "\n"
         "When the player clicks any key, the world updates.\n"
         "\n"
         "## Crypt of the NecroDancer mode\n"
         "\n"
-        "   ./prog -H -b -f 2.0 -i\n"
+        "   ./prog -H -b -f 2.0\n"
         "\n"
         "World updates even if user does nothing, but only at 2FPS.\n"
         "\n"
         "## Continuous action game\n"
         "\n"
-        "   ./prog -H -b -f 20.0 -i -w 100\n"
+        "   ./prog -H -b -f 20.0 -w 100\n"
         "\n"
         "Same as Crypt of the NecroDancer, but with wide screen, and faster FPS.\n"
         "\n"
@@ -254,7 +256,7 @@ static void printHelp() {
         "\n"
         "      5 + 1 (player itself) + 5 = 11\n"
         "\n"
-        "squares. And 550 is a multiple of 11 with a decent size.\n"
+        "squares. And 550 is a multiple of 11 with of reasonable screen size.\n"
         "\n"
     ;
 }
@@ -267,7 +269,7 @@ int main(int argc, char **argv) {
         display = true,
         randomSeedGiven = false,
         holdKey = false,
-        immediateAction = false,
+        immediateAction = true,
         limitFps = false,
         showFov = false,
         spawn = true,
@@ -283,7 +285,7 @@ int main(int argc, char **argv) {
         nHumanPlayers = 1,
         randomSeed,
         showPlayerId = 0,
-        width = 100,
+        width = 20,
         windowWidthPix = 500
     ;
 
