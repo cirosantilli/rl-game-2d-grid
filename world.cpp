@@ -311,6 +311,7 @@ void World::init(bool reuseRandomSeed) {
                 }
             }
         }
+    } else if (this->scenario == "empty") {
     } else if (this->scenario == "human") {
         this->createSingleTextureObject(
             10,
@@ -320,7 +321,41 @@ void World::init(bool reuseRandomSeed) {
             fov,
             0
         );
-    } else if (this->scenario == "plants-debug") {
+    } else if (this->scenario == "wall") {
+        this->createSingleTextureObject(
+            10,
+            10,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        this->createSingleTextureObject(
+            10,
+            11,
+            Object::Type::WALL,
+            std::make_unique<DoNothingActor>(),
+            0,
+            2
+        );
+    } else if (this->scenario == "plant") {
+        this->createSingleTextureObject(
+            10,
+            10,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
+        this->createSingleTextureObject(
+            14,
+            10,
+            Object::Type::PLANT,
+            std::make_unique<DoNothingActor>(),
+            0,
+            3
+        );
+    } else if (this->scenario == "plants") {
         this->createSingleTextureObject(
             10,
             10,
@@ -444,6 +479,7 @@ void World::init(bool reuseRandomSeed) {
 // Reset to initial state.
 // Resets everything, except the main window which stays open.
 void World::reset(bool reuseRandomSeed) {
+    this->rtree.clear();
     this->objects.clear();
     this->destroyTextures();
     this->init(reuseRandomSeed);
@@ -587,8 +623,6 @@ World::Rtree::const_query_iterator World::queryObjectsInFov(const Object& object
         auto x = object.getX();
         auto y = object.getY();
         fov--;
-        // TODO rm
-        //std::cout << World::toString(this->rtree);
         return this->rtree.qbegin(bgi::intersects(QueryBox(
             QueryPoint(x - fov, y - fov),
             QueryPoint(x + fov, y + fov)
