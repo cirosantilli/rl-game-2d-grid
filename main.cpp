@@ -155,8 +155,8 @@ static void printHelp() {
         "\n"
         "- `-r`:          (Random) set a fixed random seed.\n"
         "\n"
-        "                 If given, it is always used across restarts. Otherwise, a new\n"
-        "                 seed is chosen for every restart.\n"
+        "                 If given, this seed continues to be used when the player presses r without shift,\n"
+        "                 and is only changed if the player presses R with shift.\n"
         "\n"
         "                 This is the only source of randomness in the whole engine.\n"
         "                 Fixing it to a given value gives reproducible games.\n"
@@ -169,12 +169,16 @@ static void printHelp() {
         "## Debug options"
         "- `-h`:          (help) show this help\n"
         "\n"
+        "- `-S`:          Don't spawn any new objects during gameplay.\n"
+        "                 Useful for debugging.\n"
+        "\n"
         "- `-V`:          (Verbose) Show debug and performance information.\n"
         "\n"
         "# Controls\n"
         "\n"
-        "- `q`: quit\n"
-        "- `r`: restart from initial state\n"
+        "- `Q`: quit\n"
+        "- `R`: restart from initial state with a new random seed\n"
+        "- `SHIFT + R`: like R, but reuse the last random seed\n"
         "- `UP` / `DOWN` / `LEFT` / `RIGHT` arrow keys: move\n"
         "- `SPACE`: step simulation if neither or -i or \"-b -H\" are given\n"
         "\n"
@@ -259,6 +263,7 @@ int main(int argc, char **argv) {
         immediateAction = false,
         limitFps = false,
         showFov = false,
+        spawn = true,
         verbose = false
     ;
     std::string scenario;
@@ -321,6 +326,8 @@ int main(int argc, char **argv) {
             } else if (std::strcmp(argv[i], "-h") == 0) {
                 printHelp();
                 std::exit(EXIT_SUCCESS);
+            } else if (std::strcmp(argv[i], "-S") == 0) {
+                spawn = !spawn;
             } else if (std::strcmp(argv[i], "-V") == 0) {
                 verbose = !verbose;
             } else {
@@ -349,7 +356,8 @@ int main(int argc, char **argv) {
         nHumanPlayers,
         std::move(scenario),
         timeLimit,
-        verbose
+        verbose,
+        spawn
     );
 main_loop:
     lastTime = utils::get_secs();
@@ -397,7 +405,7 @@ main_loop:
                     goto quit;
                 }
                 if (keyboardState[SDL_SCANCODE_R]) {
-                    world->reset();
+                    world->reset(keyboardState[SDL_SCANCODE_LSHIFT] || keyboardState[SDL_SCANCODE_RSHIFT]);
                     goto main_loop;
                 }
 

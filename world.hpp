@@ -2,8 +2,9 @@
 #define WORLD_HPP
 
 #include <ctime>
-#include <set>
+#include <iostream>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,12 +32,13 @@ class World {
             unsigned int windowHeightPix,
             unsigned int showPlayerId,
             bool showFov,
-            bool fixedRandomSeed,
+            bool randomSeedGiven,
             int randomSeed,
             unsigned int nHumanPlayers,
             std::string scenario,
             int timeLimit,
-            bool verbose
+            bool verbose,
+            bool spawn
         );
         ~World();
         void draw() const;
@@ -52,10 +54,10 @@ class World {
         /// Initialize world.
         /// When placing objects, prefer to put human controlled objects first,
         /// to make them easier to select from the command line.
-        void init();
+        void init(bool reuseRandomSeed = false);
         bool isGameOver() const;
         void printScores() const;
-        void reset();
+        void reset(bool reuseRandomSeed = false);
         /// Update to the next world state. E.g.: what happens if two objects
         /// want to move to the same place next tick? Or if an object
         /// wants to move into a wall?
@@ -72,12 +74,11 @@ class World {
         // Data.
         bool
             display,
-            fixedRandomSeed,
             showFov,
+            spawn,
             verbose
         ;
         int
-            randomSeed,
             timeLimit
         ;
         std::string scenario;
@@ -90,6 +91,7 @@ class World {
             // How many human players existed when the game started.
             // Not affected by human players that died.
             nHumanPlayersInitial,
+            randomSeed,
             showPlayerId,
             ticks,
             tileHeightPix,
@@ -143,9 +145,10 @@ class World {
         unsigned int getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
-        bool needFpsUpdate() const;
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
+        bool needFpsUpdate() const;
+        Rtree::const_query_iterator queryObjectsInFov(const Object& object) const;
         void updatePosition(Object& object, unsigned int x, unsigned int y);
 
         // Static const.
@@ -153,7 +156,8 @@ class World {
         constexpr static const unsigned int N_COLOR_CHANNELS = 4;
         constexpr static const unsigned int HUD_WIDTH_PIX = 200;
 
-        static void render_text(
+        // Static private methods.
+        static void renderText(
             SDL_Renderer *renderer,
             int x,
             int y,
@@ -162,6 +166,10 @@ class World {
             SDL_Rect *rect,
             SDL_Color *color
         );
+        // Not operator<< because
+        // http://stackoverflow.com/questions/11894124/why-overloaded-operators-cannot-be-defined-as-static-members-of-a-class
+        // and I don't want to make Rtree pubic.
+        static std::string toString(const Rtree& rtree);
 };
 
 #endif

@@ -78,49 +78,57 @@ class Object {
 std::ostream& operator<<(std::ostream& os, const Object& o);
 std::ostream& operator<<(std::ostream& os, const Object::Type& t);
 
-// Adapt to Object to Boost Point.
-namespace boost { namespace geometry { namespace traits {
-    template<> struct tag<Object>
-    { typedef point_tag type; };
+namespace bg = boost::geometry;
+namespace bgi = bg::index;
 
-    template<> struct coordinate_type<Object>
-    { typedef int type; };
+namespace boost { namespace geometry {
+    // Adapt to Object to Boost Point.
+    namespace traits {
+        template<> struct tag<Object>
+        { typedef point_tag type; };
 
-    template<> struct coordinate_system<Object>
-    { typedef cs::cartesian type; };
+        template<> struct coordinate_type<Object>
+        { typedef int type; };
 
-    template<> struct dimension<Object> : boost::mpl::int_<2> {};
+        template<> struct coordinate_system<Object>
+        { typedef cs::cartesian type; };
 
-    template<>
-    struct access<Object, 0> {
-        static int get(Object const& p) {
-            return p.getX();
-        }
-        static void set(Object& p, int const& value) {
-            p.setX(value);
-        }
-    };
+        template<> struct dimension<Object> : boost::mpl::int_<2> {};
 
-    template<>
-    struct access<Object, 1> {
-        static int get(Object const& p) {
-            return p.getY();
-        }
-        static void set(Object& p, int const& value) {
-            p.setY(value);
-        }
-    };
-} } }
+        template<>
+        struct access<Object, 0> {
+            static int get(Object const& p) {
+                return p.getX();
+            }
+            static void set(Object& p, int const& value) {
+                p.setX(value);
+            }
+        };
 
-// Adapt Object* to Object.
-namespace boost { namespace geometry { namespace index {
-    template <typename Box>
-    struct indexable<Box*>
-    {
-        typedef Box* V;
-        typedef Box const& result_type;
-        result_type operator()(V const& v) const { return *v; }
-    };
-}}}
+        template<>
+        struct access<Object, 1> {
+            static int get(Object const& p) {
+                return p.getY();
+            }
+            static void set(Object& p, int const& value) {
+                p.setY(value);
+            }
+        };
+    }
+
+    // Adapt Object* to Object.
+    namespace index {
+        template <typename Box>
+        struct indexable<Box*> {
+            typedef Box* V;
+            typedef Box const& result_type;
+            result_type operator()(V const& v) const { return *v; }
+        };
+    }
+}}
+
+// Simplified object for making queries.
+typedef bg::model::point<int, 2, bg::cs::cartesian> QueryPoint;
+typedef bg::model::box<QueryPoint> QueryBox;
 
 #endif

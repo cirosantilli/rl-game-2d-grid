@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <chrono>
 #include <iomanip> // setprecision
 #include <set>
 #include <sstream>
@@ -33,22 +34,23 @@ World::World(
     unsigned int windowHeightPix,
     unsigned int showPlayerId,
     bool showFov,
-    bool fixedRandomSeed,
+    bool randomSeedGiven,
     int randomSeed,
     unsigned int nHumanPlayers,
     std::string scenario,
     int timeLimit,
-    bool verbose
+    bool verbose,
+    bool spawn
 ) :
     display(display),
-    fixedRandomSeed(fixedRandomSeed),
     showFov(showFov),
+    spawn(spawn),
     verbose(verbose),
-    randomSeed(randomSeed),
     timeLimit(timeLimit),
     scenario(std::move(scenario)),
     height(height),
     nHumanPlayersInitial(nHumanPlayers),
+    randomSeed(randomSeed),
     showPlayerId(showPlayerId),
     width(width),
     windowHeightPix(windowHeightPix),
@@ -77,7 +79,7 @@ World::World(
         }
         this->hud_text_x = this->windowWidthPix + 0.05 * this->HUD_WIDTH_PIX;
     }
-    this->init();
+    this->init(!randomSeedGiven);
 }
 
 World::~World() {
@@ -94,7 +96,7 @@ World::~World() {
 - x, y: upper left corner of string
 - rect output Width and height contain rendered dimensions.
 */
-void World::render_text(
+void World::renderText(
     SDL_Renderer *renderer,
     int x,
     int y,
@@ -124,18 +126,20 @@ void World::draw() const {
     if (this->display) {
         SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 0);
         SDL_RenderClear(this->renderer);
-        auto it = this->objects.begin();
-        int dx, dy;
+        //auto it = this->objects.begin();
+        //int dx, dy;
         auto const& showObject = **(this->objects.find(this->showPlayerId));
         auto worldView = createWorldView(showObject);
         if (this->getShowFov()) {
             auto cameraX = showObject.getX() - showObject.getFov() + 1;
             auto cameraY = showObject.getY() - showObject.getFov() + 1;
             // TODO: loop over existing world view here,
-            // to keep as close as possible to actual observable state.
-            while (this->findNextObjectInFov<decltype(it)>(it, showObject, dx, dy)) {
+            // to keep as close as possible to actual observable state and code drier.
+            auto it = this->queryObjectsInFov(showObject);
+            auto end = this->rtree.qend();
+            while (it != end) {
                 (*it)->draw(*this, cameraX, cameraY);
-                it++;
+                ++it;
             }
         } else {
             for (auto const& object : this->objects) {
@@ -159,16 +163,34 @@ void World::draw() const {
             rect.y = 0;
             rect.h = 0;
             SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "score", this->font, &rect, &color);
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(worldView->getScore()).c_str(), this->font, &rect, &color);
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "time", this->font, &rect, &color);
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "score", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(worldView->getScore()).c_str(), this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "time", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
 
             // FPS.
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, "FPS", this->font, &rect, &color);
-            std::stringstream stream;
-            stream << std::fixed << std::setprecision(3) << utils::fps::get();
-            World::render_text(this->renderer, this->hud_text_x, rect.y + rect.h, stream.str().c_str(), this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "FPS", this->font, &rect, &color);
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(3) << utils::fps::get();
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, ss.str().c_str(), this->font, &rect, &color);
+
+            // x, y
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "x, y", this->font, &rect, &color);
+            World::renderText(
+                this->renderer,
+                this->hud_text_x,
+                rect.y + rect.h,
+                (
+                    std::to_string(showObject.getX()) + ", " +
+                    std::to_string(showObject.getY())
+                ).c_str(),
+                this->font,
+                &rect,
+                &color
+            );
+
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "seed", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->randomSeed).c_str(), this->font, &rect, &color);
 
             SDL_RenderPresent(this->renderer);
         }
@@ -182,10 +204,10 @@ void World::destroyTextures() {
     this->textures.clear();
 }
 
-void World::init() {
+void World::init(bool reuseRandomSeed) {
     // Randomness.
-    if (!this->fixedRandomSeed) {
-        this->randomSeed = std::time(NULL);
+    if (!reuseRandomSeed) {
+        this->randomSeed = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     }
     std::srand(this->randomSeed);
     if (this->verbose) {
@@ -295,25 +317,35 @@ void World::init() {
             10,
             Object::Type::PLANT_EATER,
             std::make_unique<HumanActor>(),
+            //std::make_unique<RandomActor>(),
+            //std::make_unique<FollowTypeActor>(Object::Type::PLANT),
             fov,
             0
         );
-        this->createSingleTextureObject(
-            14,
-            10,
-            Object::Type::WALL,
-            std::make_unique<DoNothingActor>(),
-            0,
-            2
-        );
-        this->createSingleTextureObject(
-            0,
-            0,
-            Object::Type::WALL,
-            std::make_unique<DoNothingActor>(),
-            0,
-            2
-        );
+        //this->createSingleTextureObject(
+             //9,
+            //10,
+            //Object::Type::WALL,
+            //std::make_unique<DoNothingActor>(),
+            //0,
+            //2
+        //);
+        //this->createSingleTextureObject(
+            //14,
+            //10,
+            //Object::Type::WALL,
+            //std::make_unique<DoNothingActor>(),
+            //0,
+            //2
+        //);
+        //this->createSingleTextureObject(
+            //0,
+            //0,
+            //Object::Type::WALL,
+            //std::make_unique<DoNothingActor>(),
+            //0,
+            //2
+        //);
     } else {
         // Place human players.
         {
@@ -386,15 +418,26 @@ void World::init() {
             this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
             this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
         }
+
+        // Random walls.
+        // These completely destroy robot players that just to straight to some random food, as they keep hitting that wall.
+        // A* becomes necessary.
+        for (unsigned int y = 1; y < this->height - 1; ++y) {
+            for (unsigned int x = 1; x < this->width - 1; ++x) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 20 == 0)) {
+                    this->createSingleTextureObject(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+                }
+            }
+        }
     }
 }
 
 // Reset to initial state.
 // Resets everything, except the main window which stays open.
-void World::reset() {
+void World::reset(bool reuseRandomSeed) {
     this->objects.clear();
     this->destroyTextures();
-    this->init();
+    this->init(reuseRandomSeed);
 }
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
@@ -458,7 +501,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
     }
 
     // Spawn new objects randomly.
-    {
+    if (this->spawn) {
         // Plants
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
@@ -525,6 +568,23 @@ bool World::findNextObjectInFov(objects_t::const_iterator& it, const Object& obj
         dx,
         dy
     );
+}
+
+World::Rtree::const_query_iterator World::queryObjectsInFov(const Object& object) const {
+    auto fov = object.getFov();
+    if (fov == 0) {
+        return rtree.qend();
+    } else {
+        auto x = object.getX();
+        auto y = object.getY();
+        fov--;
+        // TODO rm
+        //std::cout << World::toString(this->rtree);
+        return this->rtree.qbegin(bgi::intersects(QueryBox(
+            QueryPoint(x - fov, y - fov),
+            QueryPoint(x + fov, y + fov)
+        )));
+    }
 }
 
 template<typename ITERATOR>
@@ -603,20 +663,24 @@ void World::printScores() const {
 }
 
 bool World::isTileEmpty(unsigned int x, unsigned int y) const {
+    // TODO rm
+    //return this->rtree.qbegin(bgi::intersects(bg::model::point<int, 2, bg::cs::cartesian>(x, y))) == this->rtree.qend();
     auto it = this->objects.begin();
     return !this->findObjectAtTile<decltype(it)>(it, x, y);
 }
 
 std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     auto objectViews = std::make_unique<std::vector<std::unique_ptr<ObjectView>>>();
-    auto it = this->objects.begin();
-    int dx, dy;
-    while (this->findNextObjectInFov<decltype(it)>(it, object, dx, dy)) {
-        auto const& otherObject = *it;
+    auto it = this->queryObjectsInFov(object);
+    auto end = this->rtree.qend();
+    while (it != end) {
+        auto const& otherObject = **it;
         objectViews->push_back(std::make_unique<ObjectView>(
-            dx, dy, otherObject->getType()
+            otherObject.getX() - object.getX(),
+            otherObject.getY() - object.getY(),
+            otherObject.getType()
         ));
-        it++;
+        ++it;
     }
     return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews), object.getScore());
 }
@@ -674,4 +738,12 @@ unsigned int World::getNextFreeObjectId() {
         id = 0;
     }
     return id;
+}
+
+std::string World::toString(const World::Rtree& rtree) {
+    std::stringstream ss;
+    for (const auto& object : rtree) {
+        ss << *object << std::endl;
+    }
+    return ss.str();
 }
