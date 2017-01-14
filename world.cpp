@@ -316,9 +316,9 @@ void World::init(bool reuseRandomSeed) {
             10,
             10,
             Object::Type::PLANT_EATER,
-            std::make_unique<HumanActor>(),
+            //std::make_unique<HumanActor>(),
             //std::make_unique<RandomActor>(),
-            //std::make_unique<FollowTypeActor>(Object::Type::PLANT),
+            std::make_unique<FollowTypeActor>(Object::Type::PLANT),
             fov,
             0
         );
@@ -333,10 +333,10 @@ void World::init(bool reuseRandomSeed) {
         //this->createSingleTextureObject(
             //14,
             //10,
-            //Object::Type::WALL,
+            //Object::Type::PLANT,
             //std::make_unique<DoNothingActor>(),
             //0,
-            //2
+            //3
         //);
         //this->createSingleTextureObject(
             //0,
