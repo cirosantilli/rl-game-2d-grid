@@ -79,7 +79,7 @@ World::World(
         }
         this->hud_text_x = this->windowWidthPix + 0.05 * this->HUD_WIDTH_PIX;
     }
-    this->init(!randomSeedGiven);
+    this->init(randomSeedGiven);
 }
 
 World::~World() {
@@ -311,6 +311,15 @@ void World::init(bool reuseRandomSeed) {
                 }
             }
         }
+    } else if (this->scenario == "human") {
+        this->createSingleTextureObject(
+            10,
+            10,
+            Object::Type::PLANT_EATER,
+            std::make_unique<HumanActor>(),
+            fov,
+            0
+        );
     } else if (this->scenario == "plants-debug") {
         this->createSingleTextureObject(
             10,

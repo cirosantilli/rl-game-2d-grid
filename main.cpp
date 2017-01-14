@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
     bool
         blockOnPlayer = true,
         display = true,
-        fixedRandomSeed = false,
+        randomSeedGiven = false,
         holdKey = false,
         immediateAction = false,
         limitFps = false,
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
             } else if (std::strcmp(argv[i], "-r") == 0) {
                 randomSeed = std::strtol(argv[i + 1], NULL, 10);
                 i++;
-                fixedRandomSeed = true;
+                randomSeedGiven = true;
             } else if (std::strcmp(argv[i], "-s") == 0) {
                 scenario = argv[i + 1];
             } else if (std::strcmp(argv[i], "-t") == 0) {
@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
         windowHeightPix,
         showPlayerId,
         showFov,
-        fixedRandomSeed,
+        randomSeedGiven,
         randomSeed,
         nHumanPlayers,
         std::move(scenario),
