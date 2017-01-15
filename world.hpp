@@ -76,10 +76,11 @@ class World {
         // Data.
         bool
             display,
-            forceGameOver,
+            userQuit,
             menuMode,
             showFov,
             spawn,
+            timeout,
             verbose
         ;
         int

@@ -91,8 +91,14 @@
     This is the only source of randomness in the whole engine. Fixing it to a
     given value gives reproducible games.
 
--   `-t`: (Time limit) stop simulation after this many steps. -1 means infinite.
-    Default: -1.
+-   `-t`: (Time limit):
+
+    -   without `-d`, pause the simulation after this many steps. This shows the
+        score on the screen. You can then continue the simulation with `P` if
+        you want, just like any regular game pause.
+    -   otherwise, quit immediately after this many steps
+
+    `-1` means infinite. Default value: `-1`.
 
 -   `-w <int>`: (Width) world width in tiles. Default: 20.
 

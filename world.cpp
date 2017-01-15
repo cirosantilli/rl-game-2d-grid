@@ -219,11 +219,10 @@ void World::init(bool reuseRandomSeed) {
         utils::fps::init();
     }
     this->menuMode = false;
-
+    this->timeout = false;
     this->ticks = 0;
     this->nHumanActions = 0;
     unsigned int fov = 5;
-    //unsigned int fov = std::min(this->getWidth(), this->getHeight()) / 2;
 
     // Setup textures. Depends on fov if we are watching an object.
     if (this->display) {
@@ -485,7 +484,7 @@ void World::pause() {
 
 void World::quit() {
     if (this->menuMode) {
-        this->forceGameOver = true;
+        this->userQuit = true;
     } else {
         this->menuMode = true;
     }
@@ -574,6 +573,10 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
         }
 
         this->ticks++;
+        if (this->ticks == (unsigned int)this->timeLimit) {
+            this->timeout = true;
+            this->menuMode = true;
+        }
     }
 
     // FPS.
@@ -654,8 +657,7 @@ bool World::findObjectAtTile(Object **object, unsigned int x, unsigned int y) co
 
 bool World::isGameOver() const {
     return
-        this->forceGameOver ||
-        this->ticks == (unsigned int)this->timeLimit
+        this->userQuit || (!this->display && this->timeout)
     ;
 }
 
@@ -684,18 +686,16 @@ void World::printScores() const {
         const auto &scoresIds = pair.second;
         for (auto it = scoresIds.rbegin(), end = scoresIds.rend(); it != end; ++it) {
             const auto &score = it->first;
-            if (score != 0) {
-                const auto &ids = it->second;
-                for (const auto &pair : ids) {
-                    const auto &id = pair.first;
-                    const auto &object = *(pair.second);
-                    std::cout
-                        << type << " "
-                        << id << " "
-                        << score << " "
-                        << object.getActor().getTypeStr()
-                    << std::endl;
-                }
+            const auto &ids = it->second;
+            for (const auto &pair : ids) {
+                const auto &id = pair.first;
+                const auto &object = *(pair.second);
+                std::cout
+                    << type << " "
+                    << id << " "
+                    << score << " "
+                    << object.getActor().getTypeStr()
+                << std::endl;
             }
         }
     }
