@@ -269,8 +269,8 @@ void World::draw() const {
 }
 
 void World::destroyTextures() {
-    for (auto& texture : this->textures) {
-        SDL_DestroyTexture(texture);
+    for (auto& pair : this->textures) {
+        SDL_DestroyTexture(pair.second);
     }
     this->textures.clear();
 }
@@ -310,81 +310,18 @@ void World::init(bool reuseRandomSeed) {
         }
         this->tileWidthPix = this->windowWidthPix / fovWidth;
         this->tileHeightPix = this->windowHeightPix / fovHeight;
-        createSolidTexture(World::COLOR_MAX, 0, 0, 0);
-        createSolidTexture(0, World::COLOR_MAX, 0, 0);
-        createSolidTexture(0, 0, World::COLOR_MAX, 0);
-        createSolidTexture(World::COLOR_MAX, World::COLOR_MAX, 0, 0);
-        createSolidTexture(World::COLOR_MAX, 0, World::COLOR_MAX, 0);
-        createSolidTexture(0, World::COLOR_MAX, World::COLOR_MAX, 0);
-        createSolidTexture(World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, 0);
-        createSolidTexture(World::COLOR_MAX / 2, World::COLOR_MAX / 2, World::COLOR_MAX / 2, 0);
-        createSolidTexture(0, World::COLOR_MAX / 2, World::COLOR_MAX, 0);
+        createSolidTexture("human", World::COLOR_MAX, 0, 0, 0);
+        createSolidTexture("plant", 0, World::COLOR_MAX, 0, 0);
+        createSolidTexture("eater", World::COLOR_MAX, World::COLOR_MAX, 0, 0);
+        createSolidTexture("wall", World::COLOR_MAX / 2, World::COLOR_MAX / 2, World::COLOR_MAX / 2, 0);
+        //createSolidTexture("blue", 0, 0, World::COLOR_MAX, 0);
+        //createSolidTexture("purple", World::COLOR_MAX, 0, World::COLOR_MAX, 0);
+        //createSolidTexture("cyan", 0, World::COLOR_MAX, World::COLOR_MAX, 0);
+        //createSolidTexture("white", World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, 0);
+        //createSolidTexture("sky", 0, World::COLOR_MAX / 2, World::COLOR_MAX, 0);
     }
 
-    if (this->scenario == "debug") {
-        // Place objects.
-        this->createSingleTextureObject(
-            this->getWidth() / 2,
-            this->getHeight() / 2,
-            Object::Type::HUMAN,
-            std::make_unique<HumanActor>(),
-            fov,
-            0
-        );
-        // TODO use nHumanPlayers
-        //if (this->multiHumanPlayer) {
-            //this->createSingleTextureObject(
-                //(this->getWidth() / 2) + 1,
-                //(this->getHeight() / 2) + 1,
-                //Object::Type::HUMAN,
-                //std::make_unique<HumanActor>(),
-                //fov,
-                //1
-            //);
-        //}
-        this->createSingleTextureObject(
-            this->getWidth() / 4,
-            this->getHeight() / 4,
-            Object::Type::RANDOM,
-            std::make_unique<RandomActor>(),
-            0,
-            2
-        );
-        this->createSingleTextureObject(
-            3 * this->getWidth() / 4,
-            this->getHeight() / 4,
-            Object::Type::FOLLOW_HUMAN,
-            std::make_unique<FollowTypeActor>(),
-            fov,
-            3
-        );
-        this->createSingleTextureObject(
-            3 * this->getWidth() / 4,
-            3 * this->getHeight() / 4,
-            Object::Type::FLEE_HUMAN,
-            std::make_unique<FleeTypeActor>(),
-            fov,
-            4
-        );
-        this->createSingleTextureObject(
-            this->getWidth() / 4,
-            3 * this->getHeight() / 4,
-            Object::Type::DO_NOTHING,
-            std::make_unique<DoNothingActor>(),
-            0,
-            5
-        );
-        for (unsigned int y = 0; y < this->height; ++y) {
-            for (unsigned int x = 0; x < this->width; ++x) {
-                unsigned int sum = x + y;
-                if (sum % 5 == 0) {
-                    this->createSingleTextureObject(x, y, Object::Type::MOVE_UP, std::make_unique<MoveUpActor>(), fov, 6);
-                } else if (sum % 7 == 0) {
-                    this->createSingleTextureObject(x, y, Object::Type::MOVE_DOWN, std::make_unique<MoveDownActor>(), fov, 7);
-                }
-            }
-        }
-    } else if (this->scenario == "empty") {
+    if (this->scenario == "empty") {
     } else if (this->scenario == "human") {
         this->createSingleTextureObject(
             10,
@@ -392,7 +329,7 @@ void World::init(bool reuseRandomSeed) {
             Object::Type::PLANT_EATER,
             std::make_unique<HumanActor>(),
             fov,
-            0
+            "human"
         );
     } else if (this->scenario == "wall") {
         this->createSingleTextureObject(
@@ -401,7 +338,7 @@ void World::init(bool reuseRandomSeed) {
             Object::Type::PLANT_EATER,
             std::make_unique<HumanActor>(),
             fov,
-            0
+            "human"
         );
         this->createSingleTextureObject(
             10,
@@ -409,7 +346,7 @@ void World::init(bool reuseRandomSeed) {
             Object::Type::WALL,
             std::make_unique<DoNothingActor>(),
             0,
-            2
+            "wall"
         );
     } else if (this->scenario == "plant") {
         this->createSingleTextureObject(
@@ -418,7 +355,7 @@ void World::init(bool reuseRandomSeed) {
             Object::Type::PLANT_EATER,
             std::make_unique<HumanActor>(),
             fov,
-            0
+            "human"
         );
         this->createSingleTextureObject(
             14,
@@ -426,43 +363,8 @@ void World::init(bool reuseRandomSeed) {
             Object::Type::PLANT,
             std::make_unique<DoNothingActor>(),
             0,
-            3
+            "plant"
         );
-    } else if (this->scenario == "plants") {
-        this->createSingleTextureObject(
-            10,
-            10,
-            Object::Type::PLANT_EATER,
-            //std::make_unique<HumanActor>(),
-            //std::make_unique<RandomActor>(),
-            std::make_unique<FollowTypeActor>(Object::Type::PLANT),
-            fov,
-            0
-        );
-        //this->createSingleTextureObject(
-             //9,
-            //10,
-            //Object::Type::WALL,
-            //std::make_unique<DoNothingActor>(),
-            //0,
-            //2
-        //);
-        //this->createSingleTextureObject(
-            //14,
-            //10,
-            //Object::Type::PLANT,
-            //std::make_unique<DoNothingActor>(),
-            //0,
-            //3
-        //);
-        //this->createSingleTextureObject(
-            //0,
-            //0,
-            //Object::Type::WALL,
-            //std::make_unique<DoNothingActor>(),
-            //0,
-            //2
-        //);
     } else {
         // Place human players.
         {
@@ -477,7 +379,7 @@ void World::init(bool reuseRandomSeed) {
                         Object::Type::PLANT_EATER,
                         std::make_unique<HumanActor>(),
                         fov,
-                        0
+                        "human"
                     );
                     totalPlayers++;
                 }
@@ -494,7 +396,7 @@ void World::init(bool reuseRandomSeed) {
                         Object::Type::PLANT_EATER,
                         std::make_unique<FollowTypeActor>(Object::Type::PLANT),
                         fov,
-                        4
+                        "eater"
                     );
                 }
             }
@@ -510,7 +412,7 @@ void World::init(bool reuseRandomSeed) {
                         Object::Type::PLANT_EATER,
                         std::make_unique<RandomActor>(),
                         fov,
-                        1
+                        "eater"
                     );
                 }
             }
@@ -520,20 +422,19 @@ void World::init(bool reuseRandomSeed) {
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (this->isTileEmpty(x, y) && (std::rand() % 5 == 0)) {
-                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, "plant");
                 }
             }
         }
 
         // Walls closing off the scenario borders.
-        textures_t::size_type wall_texture = 2;
         for (unsigned int y = 0; y < this->height; ++y) {
-            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, "wall");
+            this->createSingleTextureObject(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, "wall");
         }
         for (unsigned int x = 0; x < this->width; ++x) {
-            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
-            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+            this->createSingleTextureObject(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, "wall");
+            this->createSingleTextureObject(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, "wall");
         }
 
         // Random walls.
@@ -542,7 +443,7 @@ void World::init(bool reuseRandomSeed) {
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (this->isTileEmpty(x, y) && (std::rand() % 20 == 0)) {
-                    this->createSingleTextureObject(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, wall_texture);
+                    this->createSingleTextureObject(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0, "wall");
                 }
             }
         }
@@ -640,7 +541,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
-                        this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                        this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, "plant");
                     }
                 }
             }
@@ -677,7 +578,13 @@ bool World::needFpsUpdate() const {
     return this->verbose || this->display;
 }
 
-SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a) {
+SDL_Texture * World::createSolidTexture(
+    std::string id,
+    unsigned int r,
+    unsigned int g,
+    unsigned int b,
+    unsigned int a
+) {
     int pitch = 0;
     void *pixels = NULL;
     SDL_Texture *texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_ARGB8888,
@@ -692,7 +599,7 @@ SDL_Texture * World::createSolidTexture(unsigned int r, unsigned int g, unsigned
         *(base + 3) = a;
     }
     SDL_UnlockTexture(texture);
-    textures.push_back(texture);
+    this->textures.emplace(id, texture);
     return texture;
 }
 
@@ -791,7 +698,7 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews), object.getScore());
 }
 
-void World::createObject(std::unique_ptr<Object> object) {
+void World::addObject(std::unique_ptr<Object> object) {
     this->rtree.insert(object.get());
     this->objects.insert(std::move(object));
 }
@@ -802,18 +709,20 @@ void World::createSingleTextureObject(
     Object::Type type,
     std::unique_ptr<Actor> actor,
     unsigned int fov,
-    textures_t::size_type textureId
+    std::string textureId
 ) {
     std::unique_ptr<DrawableObject> drawableObject;
     if (this->display) {
-        drawableObject = std::make_unique<SingleTextureDrawableObject>(this->textures[textureId]);
+        auto it = this->textures.find(textureId);
+        assert(it != this->textures.end());
+        drawableObject = std::make_unique<SingleTextureDrawableObject>(it->second);
     } else {
         drawableObject = std::make_unique<DoNothingDrawableObject>();
     }
     if (actor->takesHumanAction()) {
         this->nHumanActions++;
     }
-    this->createObject(std::make_unique<Object>(
+    this->addObject(std::make_unique<Object>(
         x,
         y,
         type,

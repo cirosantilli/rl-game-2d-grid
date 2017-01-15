@@ -114,21 +114,21 @@ class World {
         Rtree rtree;
         TTF_Font *font;
         objects_t objects;
-        std::vector<SDL_Texture *> textures;
+        std::map<std::string, SDL_Texture *> textures;
 
         // Methods.
-        SDL_Texture * createSolidTexture(unsigned int r, unsigned int g, unsigned int b, unsigned int a);
+        SDL_Texture * createSolidTexture(std::string id, unsigned int r, unsigned int g, unsigned int b, unsigned int a);
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
         /// Should always be used for object creation instead of raw insertion into data types,
         /// ince a single insertion may require multiple index updates.
-        void createObject(std::unique_ptr<Object> object);
+        void addObject(std::unique_ptr<Object> object);
         void createSingleTextureObject(
             unsigned int x,
             unsigned int y,
             Object::Type type,
             std::unique_ptr<Actor> actor,
             unsigned int fov,
-            textures_t::size_type textureId
+            std::string textureid
         );
         void deleteObject(Object *object);
         /// Make object point to the object at a given tile if one is present.
