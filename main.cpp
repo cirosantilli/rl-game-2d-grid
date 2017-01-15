@@ -4,6 +4,7 @@ This file deals with
 
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -65,200 +66,20 @@ static bool holdControls(
     return currentActionModified;
 }
 
+static void cat(std::string filename) {
+    std::ifstream file(filename);
+    std::string str;
+    while (std::getline(file, str)) {
+        std::cerr << str << std::endl;
+    }
+}
+
 static void printHelp() {
-    std::cerr <<
-        "# CLI Options\n"
-        "\n"
-        "## Interactive play options\n"
-        "\n"
-        "- `-b`:          (Block) don't block on player input.\n"
-        "\n"
-        "                 If given, if he player does not give any input until\n"
-        "                 before the current frame is over, and empty input is used,\n"
-        "                 and the simulation progresses.\n"
-        "\n"
-        "                 Not setting this option makes the game more Rogue-like.\n"
-        "\n"
-        "- `-d`:          (Display) turn display off. Might make simulation faster\n"
-        "                 or runnable in device without display.\n"
-        "\n"
-        "                 User input is only available with display.\n"
-        "\n"
-        "                 If not present, simulation runs as faster as possible.\n"
-        "\n"
-        "                 Helps humans visualize non-interactive simulations\n"
-        "                 that are too fast. E.g. `-f 2.0` limits simulation to 2 FPS.\n"
-        "\n"
-        "                 Forces -p = 0, since it is currently impossible to control\n"
-        "                 players without a display.\n"
-        "\n"
-        "- `-f <double>`: (Fps) limit FPS to <double> FPS. Default: 1.0.\n"
-        "\n"
-        "                 You likely don't want this for interactive simulations that\n"
-        "                 block on user input (Rogue-like), as this becomes lag.\n"
-        "\n"
-        "- `-H`:          (Hold key) actions are taken if the player is holding\n"
-        "                 at the end of a frame, a click is not needed.\n"
-        "\n"
-        "                 The simulation advances automatically if the player is hodling any key\n"
-        "                 at the end of the frame.\n"
-        "\n"
-        "                 If a click action (-i) was taken during the previous frame,\n"
-        "                 it gets overridden if any key is held at the en of the frame.\n"
-        "\n"
-        "                 Holding SPACE makes the simulation advance with an empty action.\n"
-        "\n"
-        "                 Makes the game more interactive, and controls less precise.\n"
-        "\n"
-        "                 By hardware limitation, some combinations of keys may be impossible,\n"
-        "                 while similar ones are possible, e.g. Right + Up + Space vs Left + Up + Space\n"
-        "                 on Lenovo keyboards:\n"
-        "                 http://unix.stackexchange.com/questions/268850/leftupspace-keys-not-working-on-thinkpad-x201\n"
-        "\n"
-        "                 Only the first human player is affected by this option, since it is impossible\n"
-        "                 to give different controls to different players (the only two design\n"
-        "                 choices are: affect only first or affect all equally, and we chose N.1).\n"
-        "\n"
-        "- `-i`:          (toggle Immediate) mode. Default: on.\n"
-        "\n"
-        "                 If on, create action immediately whenever the user presses any key,\n"
-        "                 without waiting for `SPACE` to be pressed.\n"
-        "\n"
-        "                 Makes game more interactive, and less precisely controllable.\n"
-        "\n"
-        "                 In particular, it becomes difficult to press multiple simultaneous\n"
-        "                 keys consistently.\n"
-        "\n"
-        "- `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way to show\n"
-        "                 scenario list here. For now read source\n"
-        "\n"
-        "- `-v <int>`:    (View player) Only show what the int-th player is able to observe.\n"
-        "\n"
-        "                 This notably limits the field of view of the player,\n"
-        "                 but also includes for which player the HUD is about (e.g. score).\n"
-        "\n"
-        "                 You are forced to use this if the world is so large that\n"
-        "                 each tile would be less than one pixel wide.\n"
-        "\n"
-        "                 You do not need to be controlling the observed player: in particular\n"
-        "                 if there are 0 players to be controlled by keyboard, you can just watch\n"
-        "                 the action unroll by itself.\n"
-        "                 You can also control one player while observing another,\n"
-        "                 but you will likely go nuts.\n"
-        "\n"
-        "- `-W <int>`:    (Width) window width in pixels. Square windows only for now.\n"
-        "                 Must be divisible by the width of the world. Default: 500.\n"
-        "\n"
-        "## World state options\n"
-        "\n"
-        "- `-p`:          now many human players should be added to the map. Default: 1.\n"
-        "\n"
-        "                 With 0 you watch computer bots fight.\n"
-        "\n"
-        "- `-r`:          (Random) set a fixed random seed.\n"
-        "\n"
-        "                 This is the only source of randomness in the whole engine.\n"
-        "                 Fixing it to a given value gives reproducible games.\n"
-        "\n"
-        "- `-t`:          (Time limit) stop simulation after this many steps.\n"
-        "                 -1 means infinite. Default: -1.\n"
-        "\n"
-        "- `-w <int>`:    (Width) world width in tiles. Default: 20.\n"
-        "\n"
-        "## Debug options"
-        "- `-h`:          (help) show this help\n"
-        "\n"
-        "- `-S`:          Don't spawn any new objects during gameplay.\n"
-        "                 Useful for debugging.\n"
-        "\n"
-        "- `-V`:          (Verbose) Show debug and performance information.\n"
-        "\n"
-        "# Controls\n"
-        "\n"
-        "- `Q`: quit\n"
-        "- `R`: restart from initial state with a new random seed\n"
-        "- `SHIFT + R`: like R, but reuse the last random seed\n"
-        "- `UP` / `DOWN` / `LEFT` / `RIGHT` arrow keys: move\n"
-        "- `SPACE`: step simulation if -i is given and \"-b -H\" is not\n"
-        "\n"
-        "# Examples\n"
-        "\n"
-        "## Rogue-like TAS mode\n"
-        "\n"
-        "    ./prog -i\n"
-        "\n"
-        "If a player controller is present,\n"
-        "then the world blocks until player makes a move (`SPACE`).\n"
-        "\n"
-        "By TAS, we mean that each input can be carefully constructed,\n"
-        "by parts, and the world only advances when `SPACE` is pressed.\n"
-        "in similar fashion to how Tool Assisted Speedruns are developed\n"
-        "\n"
-        "This mode may be too slow to be fun, but it allows for precise controls.\n"
-        "\n"
-        "E.g., to move diagonally right up, you do:\n"
-        "\n"
-        "- `RIGHT` (horizontal direction)\n"
-        "- `UP` (vertical direction)\n"
-        "- `SPACE`\n"
-        "\n"
-        "The default for each type of direction is to do nothing.\n"
-        "E.g., to just move up:\n"
-        "\n"
-        "- `UP` (vertical direction)\n"
-        "- `SPACE`\n"
-        "\n"
-        "Since there was no horizontal input, the default of not\n"
-        "moving horizontally is used.\n"
-        "\n"
-        "You can fix some controls half-way. E.g. the following will move up:\n"
-        ""
-        "\n"
-        "- `DOWN`\n"
-        "- `UP`, overrides the previous `DOWN`\n"
-        "- `SPACE`\n"
-        "\n"
-        "## Rogue mode\n"
-        "\n"
-        "    ./prog\n"
-        "\n"
-        "When the player clicks any key, the world updates.\n"
-        "\n"
-        "## Crypt of the NecroDancer mode\n"
-        "\n"
-        "   ./prog -H -b -f 2.0\n"
-        "\n"
-        "World updates even if user does nothing, but only at 2FPS.\n"
-        "\n"
-        "## Continuous action game\n"
-        "\n"
-        "   ./prog -H -b -f 20.0 -w 100\n"
-        "\n"
-        "Same as Crypt of the NecroDancer, but with wide screen, and faster FPS.\n"
-        "\n"
-        "Most engines will implement this mode with floating point positions,\n"
-        "but it could also be done with integers. However, we map states 1-to-1\n"
-        "with screen while using floating point means that multiple states map to a\n"
-        "single screen after rounding.\n"
-        "\n"
-        "## Non-interactive simulation\n"
-        "\n"
-        "    ./prog -t 10 -p 0 -d\n"
-        "\n"
-        "Let your AIs battle it out for 10 ticks, and at the end see all scores.\n"
-        "No human intervention or GUI, everything happens as fast as possible.\n"
-        "\n"
-        "## Only view what the 0-th player (the first one) sees\n"
-        "\n"
-        "     ./prog -v 0 -W 550\n"
-        "\n"
-        "Here 550 assumes that the FOV is 5, which requres:\n"
-        "\n"
-        "      5 + 1 (player itself) + 5 = 11\n"
-        "\n"
-        "squares. And 550 is a multiple of 11 with of reasonable screen size.\n"
-        "\n"
-    ;
+    cat("controls.md");
+    std::cerr << std::endl;
+    cat("examples.md");
+    std::cerr << std::endl;
+    cat("cli.md");
 }
 
 int main(int argc, char **argv) {
@@ -399,7 +220,7 @@ main_loop:
             bool
                 slackOver = (slack < 0.0),
                 currentActionModified = false,
-                holdActionDone = false
+                done = false
             ;
             if (display) {
                 std::memcpy(lastKeyboardState.get(), keyboardState, keyboardStateSize);
@@ -409,12 +230,18 @@ main_loop:
                     }
                 }
 
-                // Immediate action controls that don't wait for FPS limiting.
-                if (keyboardState[SDL_SCANCODE_Q]) {
-                    goto quit;
+                // Game meta controls.
+                if (keyboardState[SDL_SCANCODE_P] && !lastKeyboardState[SDL_SCANCODE_P]) {
+                    world->pause();
+                    done = true;
                 }
-                if (keyboardState[SDL_SCANCODE_R]) {
-                    world->reset(keyboardState[SDL_SCANCODE_LSHIFT] || keyboardState[SDL_SCANCODE_RSHIFT]);
+                if (keyboardState[SDL_SCANCODE_Q] && !lastKeyboardState[SDL_SCANCODE_Q]) {
+                    world->quit();
+                    done = true;
+                }
+                if (keyboardState[SDL_SCANCODE_R] && !lastKeyboardState[SDL_SCANCODE_R]) {
+                    auto reuseSeed = keyboardState[SDL_SCANCODE_LSHIFT] || keyboardState[SDL_SCANCODE_RSHIFT];
+                    world->reset(reuseSeed);
                     goto main_loop;
                 }
 
@@ -447,12 +274,12 @@ main_loop:
                     );
                     if (holdActionModified) {
                         *humanActions[0] = currentAction;
-                        holdActionDone = true;
+                        done = true;
                     }
                 }
             }
             loop =
-                !holdActionDone
+                !done
                 &&
                 (
                     (blockOnPlayer && needMoreHumanActions)

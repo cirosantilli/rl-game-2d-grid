@@ -126,24 +126,25 @@ void World::draw() const {
     if (this->display) {
         SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 0);
         SDL_RenderClear(this->renderer);
-        //auto it = this->objects.begin();
-        //int dx, dy;
         auto const& showObject = **(this->objects.find(this->showPlayerId));
         auto worldView = createWorldView(showObject);
-        if (this->getShowFov()) {
-            auto cameraX = showObject.getX() - showObject.getFov() + 1;
-            auto cameraY = showObject.getY() - showObject.getFov() + 1;
-            // TODO: loop over existing world view here,
-            // to keep as close as possible to actual observable state and code drier.
-            auto it = this->queryObjectsInFov(showObject);
-            auto end = this->rtree.qend();
-            while (it != end) {
-                (*it)->draw(*this, cameraX, cameraY);
-                ++it;
-            }
+        if (this->menuMode) {
         } else {
-            for (auto const& object : this->objects) {
-                object->draw(*this);
+            if (this->getShowFov()) {
+                auto cameraX = showObject.getX() - showObject.getFov() + 1;
+                auto cameraY = showObject.getY() - showObject.getFov() + 1;
+                // TODO: loop over existing world view here,
+                // to keep as close as possible to actual observable state and code drier.
+                auto it = this->queryObjectsInFov(showObject);
+                auto end = this->rtree.qend();
+                while (it != end) {
+                    (*it)->draw(*this, cameraX, cameraY);
+                    ++it;
+                }
+            } else {
+                for (auto const& object : this->objects) {
+                    object->draw(*this);
+                }
             }
         }
 
@@ -213,9 +214,11 @@ void World::init(bool reuseRandomSeed) {
     if (this->verbose) {
         std::cout << "randomSeed " << randomSeed << '\n';
     }
+
     if (this->needFpsUpdate()) {
         utils::fps::init();
     }
+    this->menuMode = false;
 
     this->ticks = 0;
     this->nHumanActions = 0;
@@ -476,6 +479,18 @@ void World::init(bool reuseRandomSeed) {
     }
 }
 
+void World::pause() {
+    this->menuMode = !this->menuMode;
+}
+
+void World::quit() {
+    if (this->menuMode) {
+        this->forceGameOver = true;
+    } else {
+        this->menuMode = true;
+    }
+}
+
 // Reset to initial state.
 // Resets everything, except the main window which stays open.
 void World::reset(bool reuseRandomSeed) {
@@ -486,77 +501,80 @@ void World::reset(bool reuseRandomSeed) {
 }
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
-    auto humanActionsIt = humanActions.begin();
+    if (this->menuMode) {
+    } else {
+        auto humanActionsIt = humanActions.begin();
 
-    // Update existing objects.
-    for (const auto &object : this->objects) {
-        Action action;
-        auto& actor = object->getActor();
-        if (actor.takesHumanAction()) {
-            action = **humanActionsIt;
-            humanActionsIt++;
-        } else {
-            action = actor.act(*createWorldView(*object));
-        }
-
-        auto x = object->getX();
-        auto y = object->getY();
-
-        // X
-        if (action.getMoveX() == Action::MoveX::LEFT) {
-            if (x > 0) {
-                x--;
+        // Update existing objects.
+        for (const auto &object : this->objects) {
+            Action action;
+            auto& actor = object->getActor();
+            if (actor.takesHumanAction()) {
+                action = **humanActionsIt;
+                humanActionsIt++;
+            } else {
+                action = actor.act(*createWorldView(*object));
             }
-        } else if (action.getMoveX() == Action::MoveX::RIGHT) {
-            if (x < this->getWidth() - 1) {
-                x++;
-            }
-        }
 
-        // Y
-        if (action.getMoveY() == Action::MoveY::UP) {
-            if (y < this->getHeight() - 1) {
-                y++;
-            }
-        } else if (action.getMoveY() == Action::MoveY::DOWN) {
-            if (y > 0) {
-                y--;
-            }
-        }
+            auto x = object->getX();
+            auto y = object->getY();
 
-        Object *objectAtTarget;
-        bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
-        bool shouldMove = false;
-        if (tileNonEmpty) {
-            auto objectType = object->getType();
-            auto targetType = objectAtTarget->getType();
-            if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
+            // X
+            if (action.getMoveX() == Action::MoveX::LEFT) {
+                if (x > 0) {
+                    x--;
+                }
+            } else if (action.getMoveX() == Action::MoveX::RIGHT) {
+                if (x < this->getWidth() - 1) {
+                    x++;
+                }
+            }
+
+            // Y
+            if (action.getMoveY() == Action::MoveY::UP) {
+                if (y < this->getHeight() - 1) {
+                    y++;
+                }
+            } else if (action.getMoveY() == Action::MoveY::DOWN) {
+                if (y > 0) {
+                    y--;
+                }
+            }
+
+            Object *objectAtTarget;
+            bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
+            bool shouldMove = false;
+            if (tileNonEmpty) {
+                auto objectType = object->getType();
+                auto targetType = objectAtTarget->getType();
+                if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
+                    shouldMove = true;
+                    object->setScore(object->getScore() + 1);
+                    this->deleteObject(objectAtTarget);
+                }
+            } else {
                 shouldMove = true;
-                object->setScore(object->getScore() + 1);
-                this->deleteObject(objectAtTarget);
             }
-        } else {
-            shouldMove = true;
-        }
-        if (shouldMove) {
-            this->updatePosition(*object, x, y);
+            if (shouldMove) {
+                this->updatePosition(*object, x, y);
+            }
+
         }
 
-    }
-
-    // Spawn new objects randomly.
-    if (this->spawn) {
-        // Plants
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
-                    this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+        // Spawn new objects randomly.
+        if (this->spawn) {
+            // Plants
+            for (unsigned int y = 1; y < this->height - 1; ++y) {
+                for (unsigned int x = 1; x < this->width - 1; ++x) {
+                    if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                        this->createSingleTextureObject(x, y, Object::Type::PLANT, std::make_unique<DoNothingActor>(), 0, 3);
+                    }
                 }
             }
         }
-    }
 
-    this->ticks++;
+        this->ticks++;
+    }
 
     // FPS.
     if (this->needFpsUpdate()) {
@@ -635,7 +653,10 @@ bool World::findObjectAtTile(Object **object, unsigned int x, unsigned int y) co
 }
 
 bool World::isGameOver() const {
-    return this->ticks == (unsigned int)this->timeLimit;
+    return
+        this->forceGameOver ||
+        this->ticks == (unsigned int)this->timeLimit
+    ;
 }
 
 void World::printScores() const {

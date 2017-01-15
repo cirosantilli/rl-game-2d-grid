@@ -56,7 +56,9 @@ class World {
         /// to make them easier to select from the command line.
         void init(bool reuseRandomSeed = false);
         bool isGameOver() const;
+        void pause();
         void printScores() const;
+        void quit();
         void reset(bool reuseRandomSeed = false);
         /// Update to the next world state. E.g.: what happens if two objects
         /// want to move to the same place next tick? Or if an object
@@ -74,6 +76,8 @@ class World {
         // Data.
         bool
             display,
+            forceGameOver,
+            menuMode,
             showFov,
             spawn,
             verbose

@@ -1,9 +1,12 @@
 .POSIX:
 
 O ?= 0
+G ?= gdb3
 STD ?= c++14
-CCC ?= g++ -MMD -ggdb3 -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
+CCC ?= g++ -MMD -g$(G) -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
 DEP_EXT ?= .d
+H_EXT ?= .hpp
+PH_EXT ?= .hpp.gch
 IN_EXT ?= .cpp
 LIBS ?= -lm -lSDL2 -lSDL2_ttf
 OBJ_EXT ?= .o
@@ -24,8 +27,13 @@ $(RUN_BASENAME): $(OBJS)
 %$(OBJ_EXT): %$(IN_EXT)
 	$(CCC) -c '$<' -o '$@'
 
+# TODO get precomiled headers working.
+#%$(OBJ_EXT): %$(PH_EXT)
+#%$(PH_EXT): %$(H_EXT)
+	#$(CCC) '$<' -o '$@'
+
 clean:
-	rm -f *'$(DEP_EXT)' *'$(OBJ_EXT)' '$(RUN_BASENAME)'
+	rm -f *'$(DEP_EXT)' *'$(OBJ_EXT)' '$(PH_EXT)' '$(RUN_BASENAME)'
 
 run: $(RUN_BASENAME)
 	./'$(RUN_BASENAME)'
