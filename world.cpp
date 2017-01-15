@@ -77,7 +77,10 @@ World::World(
             fprintf(stderr, "error: font not found\n");
             exit(EXIT_FAILURE);
         }
-        this->hud_text_x = this->windowWidthPix + 0.05 * this->HUD_WIDTH_PIX;
+        auto margin = 0.05 * this->HUD_WIDTH_PIX;
+        this->hud_text_x = this->windowWidthPix + margin;
+        this->menu_text_x = margin;
+        this->text_margin_y = margin;
     }
     this->init(randomSeedGiven);
 }
@@ -128,7 +131,72 @@ void World::draw() const {
         SDL_RenderClear(this->renderer);
         auto const& showObject = **(this->objects.find(this->showPlayerId));
         auto worldView = createWorldView(showObject);
+        auto const& showObjectScore = worldView->getScore();
         if (this->menuMode) {
+            std::map<
+                decltype(std::declval<Object>().getScore()),
+                std::set<const Object*>
+            > m;
+            auto type = showObject.getType();
+            for (const auto &object : this->objects) {
+                if (object->getType() == type) {
+                    m[object->getScore()].insert(object.get());
+                }
+            }
+            SDL_Rect rect;
+            rect.y = this->text_margin_y;
+            rect.h = 0;
+            SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
+            World::renderText(this->renderer, this->menu_text_x, rect.y + rect.h, "PAUSE", this->font, &rect, &color);
+            World::renderText(this->renderer, this->menu_text_x, rect.y + rect.h, " ", this->font, &rect, &color);
+
+            // Show current player rank.
+            unsigned int count = 0;
+            for (auto it = m.rbegin(), end = m.rend(); it != end; ++it) {
+                const auto& pair = *it;
+                const auto& score = pair.first;
+                const auto& objects = pair.second;
+                if (score == showObjectScore)
+                    break;
+                count += objects.size();
+            }
+            World::renderText(
+                this->renderer,
+                this->menu_text_x,
+                rect.y + rect.h,
+                std::string("Your rank: #" + std::to_string(count + 1)).c_str(),
+                this->font, &rect, &color
+            );
+            World::renderText(this->renderer, this->menu_text_x, rect.y + rect.h, " ", this->font, &rect, &color);
+
+            // Show top scores of the same type as the current player.
+            count = 0;
+            World::renderText(this->renderer, this->menu_text_x, rect.y + rect.h, "WINNERS", this->font, &rect, &color);
+            World::renderText(this->renderer, this->menu_text_x, rect.y + rect.h, "rank id score type", this->font, &rect, &color);
+            for (auto it = m.rbegin(), end = m.rend(); it != end; ++it) {
+                const auto& pair = *it;
+                const auto& score = pair.first;
+                const auto& objects = pair.second;
+                for (const auto& object : objects) {
+                    World::renderText(
+                        this->renderer,
+                        this->menu_text_x,
+                        rect.y + rect.h,
+                        (
+                            std::to_string(count + 1) + " " +
+                            std::to_string(object->getId()) + " " +
+                            std::to_string(score) + " " +
+                            object->getActor().getTypeStr()
+                        ).c_str(),
+                        this->font,
+                        &rect,
+                        &color
+                    );
+                    count++;
+                    if (count == 5)
+                        goto scorePrintEnd;
+                }
+            }
         } else {
             if (this->getShowFov()) {
                 auto cameraX = showObject.getX() - showObject.getFov() + 1;
@@ -147,12 +215,13 @@ void World::draw() const {
                 }
             }
         }
+        scorePrintEnd:
 
         // HUD.
         {
             SDL_Rect rect;
 
-            // Separator.
+            // Separator line.
             SDL_SetRenderDrawColor(renderer, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX);
             rect.x = this->windowWidthPix;
             rect.y = 0;
@@ -161,12 +230,12 @@ void World::draw() const {
             SDL_RenderFillRect(this->renderer, &rect);
 
             // Text.
-            rect.y = 0;
+            rect.y = this->text_margin_y;
             rect.h = 0;
             SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
-            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "score", this->font, &rect, &color);
-            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(worldView->getScore()).c_str(), this->font, &rect, &color);
-            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "time", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Score", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(showObjectScore).c_str(), this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Time", this->font, &rect, &color);
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
 
             // FPS.
@@ -190,7 +259,8 @@ void World::draw() const {
                 &color
             );
 
-            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "seed", this->font, &rect, &color);
+            // Seed.
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Seed", this->font, &rect, &color);
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->randomSeed).c_str(), this->font, &rect, &color);
 
             SDL_RenderPresent(this->renderer);
@@ -666,14 +736,11 @@ void World::printScores() const {
         Object::Type,
         std::map<
             decltype(std::declval<Object>().getScore()),
-            std::set<std::pair<
-                unsigned int,
-                const Object*
-            >>
+            std::set<const Object*>
         >
     > m;
     for (const auto &object : this->objects) {
-        m[object->getType()][object->getScore()].insert(std::make_pair(object->getId(), object.get()));
+        m[object->getType()][object->getScore()].insert(object.get());
     }
 
     if (this->verbose) {
@@ -687,14 +754,12 @@ void World::printScores() const {
         for (auto it = scoresIds.rbegin(), end = scoresIds.rend(); it != end; ++it) {
             const auto &score = it->first;
             const auto &ids = it->second;
-            for (const auto &pair : ids) {
-                const auto &id = pair.first;
-                const auto &object = *(pair.second);
+            for (const auto &object : ids) {
                 std::cout
                     << type << " "
-                    << id << " "
+                    << object->getId() << " "
                     << score << " "
-                    << object.getActor().getTypeStr()
+                    << object->getActor().getTypeStr()
                 << std::endl;
             }
         }

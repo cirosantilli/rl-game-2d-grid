@@ -30,7 +30,7 @@ $(RUN_BASENAME): $(OBJS)
 # TODO get precomiled headers working.
 #%$(OBJ_EXT): %$(PH_EXT)
 #%$(PH_EXT): %$(H_EXT)
-	#$(CCC) '$<' -o '$@'
+#	$(CCC) '$<' -o '$@'
 
 clean:
 	rm -f *'$(DEP_EXT)' *'$(OBJ_EXT)' '$(PH_EXT)' '$(RUN_BASENAME)'

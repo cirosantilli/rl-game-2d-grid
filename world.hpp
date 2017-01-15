@@ -90,6 +90,7 @@ class World {
         unsigned int
             height,
             hud_text_x,
+            menu_text_x,
             // Number of human actions required.
             // May be != nHumanPlayers, since human players might die in the middle of the game.
             nHumanActions,
@@ -98,6 +99,7 @@ class World {
             nHumanPlayersInitial,
             randomSeed,
             showPlayerId,
+            text_margin_y,
             ticks,
             tileHeightPix,
             tileWidthPix,
