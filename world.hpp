@@ -79,6 +79,7 @@ class World {
             userQuit,
             menuMode,
             showFov,
+            skipUpdateOnce,
             spawn,
             timeout,
             verbose

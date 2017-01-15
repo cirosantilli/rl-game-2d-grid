@@ -292,6 +292,7 @@ void World::init(bool reuseRandomSeed) {
     this->timeout = false;
     this->ticks = 0;
     this->nHumanActions = 0;
+    this->skipUpdateOnce = false;
     unsigned int fov = 5;
 
     // Setup textures. Depends on fov if we are watching an object.
@@ -549,6 +550,7 @@ void World::init(bool reuseRandomSeed) {
 }
 
 void World::pause() {
+    this->skipUpdateOnce = this->menuMode;
     this->menuMode = !this->menuMode;
 }
 
@@ -570,64 +572,66 @@ void World::reset(bool reuseRandomSeed) {
 }
 
 void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
-    if (this->menuMode) {
-    } else {
-        auto humanActionsIt = humanActions.begin();
+    if (!this->menuMode) {
+        if (this->skipUpdateOnce) {
+            this->skipUpdateOnce = false;
+        } else {
+            auto humanActionsIt = humanActions.begin();
 
-        // Update existing objects.
-        for (const auto &object : this->objects) {
-            Action action;
-            auto& actor = object->getActor();
-            if (actor.takesHumanAction()) {
-                action = **humanActionsIt;
-                humanActionsIt++;
-            } else {
-                action = actor.act(*createWorldView(*object));
-            }
-
-            auto x = object->getX();
-            auto y = object->getY();
-
-            // X
-            if (action.getMoveX() == Action::MoveX::LEFT) {
-                if (x > 0) {
-                    x--;
+            // Update existing objects.
+            for (const auto &object : this->objects) {
+                Action action;
+                auto& actor = object->getActor();
+                if (actor.takesHumanAction()) {
+                    action = **humanActionsIt;
+                    humanActionsIt++;
+                } else {
+                    action = actor.act(*createWorldView(*object));
                 }
-            } else if (action.getMoveX() == Action::MoveX::RIGHT) {
-                if (x < this->getWidth() - 1) {
-                    x++;
-                }
-            }
 
-            // Y
-            if (action.getMoveY() == Action::MoveY::UP) {
-                if (y < this->getHeight() - 1) {
-                    y++;
-                }
-            } else if (action.getMoveY() == Action::MoveY::DOWN) {
-                if (y > 0) {
-                    y--;
-                }
-            }
+                auto x = object->getX();
+                auto y = object->getY();
 
-            Object *objectAtTarget;
-            bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
-            bool shouldMove = false;
-            if (tileNonEmpty) {
-                auto objectType = object->getType();
-                auto targetType = objectAtTarget->getType();
-                if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
+                // X
+                if (action.getMoveX() == Action::MoveX::LEFT) {
+                    if (x > 0) {
+                        x--;
+                    }
+                } else if (action.getMoveX() == Action::MoveX::RIGHT) {
+                    if (x < this->getWidth() - 1) {
+                        x++;
+                    }
+                }
+
+                // Y
+                if (action.getMoveY() == Action::MoveY::UP) {
+                    if (y < this->getHeight() - 1) {
+                        y++;
+                    }
+                } else if (action.getMoveY() == Action::MoveY::DOWN) {
+                    if (y > 0) {
+                        y--;
+                    }
+                }
+
+                Object *objectAtTarget;
+                bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
+                bool shouldMove = false;
+                if (tileNonEmpty) {
+                    auto objectType = object->getType();
+                    auto targetType = objectAtTarget->getType();
+                    if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
+                        shouldMove = true;
+                        object->setScore(object->getScore() + 1);
+                        this->deleteObject(objectAtTarget);
+                    }
+                } else {
                     shouldMove = true;
-                    object->setScore(object->getScore() + 1);
-                    this->deleteObject(objectAtTarget);
                 }
-            } else {
-                shouldMove = true;
+                if (shouldMove) {
+                    this->updatePosition(*object, x, y);
+                }
             }
-            if (shouldMove) {
-                this->updatePosition(*object, x, y);
-            }
-
         }
 
         // Spawn new objects randomly.
