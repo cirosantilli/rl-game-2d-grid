@@ -117,18 +117,20 @@ class World {
         std::map<std::string, SDL_Texture *> textures;
 
         // Methods.
-        SDL_Texture * createSolidTexture(std::string id, unsigned int r, unsigned int g, unsigned int b, unsigned int a);
+        SDL_Texture * createSolidTexture(
+            std::string id,
+            double r,
+            double g,
+            double b,
+            double a = 0.0
+        );
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
         /// Should always be used for object creation instead of raw insertion into data types,
         /// ince a single insertion may require multiple index updates.
-        void addObject(std::unique_ptr<Object> object);
+        void addObject(std::unique_ptr<Object>&& object);
         void createSingleTextureObject(
-            unsigned int x,
-            unsigned int y,
-            Object::Type type,
-            std::unique_ptr<Actor> actor,
-            unsigned int fov,
-            std::string textureid
+            std::unique_ptr<Object>&& object,
+            std::string textureId
         );
         void deleteObject(Object *object);
         /// Make object point to the object at a given tile if one is present.

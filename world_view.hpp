@@ -18,7 +18,7 @@ class WorldView {
         );
         unsigned int getHeight() const;
         const std::vector<std::unique_ptr<ObjectView>>& getObjectViews() const;
-        unsigned int getScore() const;
+        int getScore() const;
         unsigned int getWidth() const;
     private:
         std::unique_ptr<std::vector<std::unique_ptr<ObjectView>>> objectViews;

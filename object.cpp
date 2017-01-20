@@ -18,9 +18,25 @@ Object::Object(
     actor(std::move(actor)),
     drawableObject(std::move(drawableObject)),
     type(type),
+    score(0),
     fov(fov),
     id(id),
+    x(x),
+    y(y)
+{}
+Object::Object(
+    unsigned int x,
+    unsigned int y,
+    Type type,
+    std::unique_ptr<Actor> actor,
+    unsigned int fov
+) :
+    actor(std::move(actor)),
+    drawableObject(nullptr),
+    type(type),
     score(0),
+    fov(fov),
+    id(0),
     x(x),
     y(y)
 {}
@@ -31,11 +47,15 @@ void Object::draw(const World& world, int cameraX, int cameraY) const {
 Actor& Object::getActor() const { return *this->actor; }
 unsigned int Object::getFov() const { return this->fov; }
 unsigned int Object::getId() const { return this->id; }
-unsigned int Object::getScore() const { return this->score; }
+int Object::getScore() const { return this->score; }
 auto Object::getType() const -> Type { return this->type; }
 unsigned int Object::getX() const { return this->x; }
 unsigned int Object::getY() const { return this->y; }
-void Object::setScore(unsigned int score) { this->score = score; }
+void Object::setDrawableObject(std::unique_ptr<DrawableObject>&& drawableObject) {
+    this->drawableObject = std::move(drawableObject);
+}
+void Object::setId(unsigned int id) { this->id = id; }
+void Object::setScore(int score) { this->score = score; }
 void Object::setX(unsigned int x) { this->x = x; }
 void Object::setY(unsigned int y) { this->y = y; }
 

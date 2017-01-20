@@ -10,5 +10,5 @@ WorldView::WorldView(
     objectViews(std::move(objectViews)), height(height), score(score), width(width) {}
 unsigned int WorldView::getHeight() const { return this->height; }
 const std::vector<std::unique_ptr<ObjectView>>& WorldView::getObjectViews() const { return *this->objectViews; }
-unsigned int WorldView::getScore() const { return this->score; }
+int WorldView::getScore() const { return this->score; }
 unsigned int WorldView::getWidth() const { return this->width; }

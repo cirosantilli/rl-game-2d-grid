@@ -35,15 +35,24 @@ class Object {
             std::unique_ptr<DrawableObject> drawableObject,
             unsigned int id
         );
+        Object(
+            unsigned int x,
+            unsigned int y,
+            Type type,
+            std::unique_ptr<Actor> actor,
+            unsigned int fov
+        );
         void draw(const World& world, int cameraX = 0, int cameraY = 0) const;
         Actor& getActor() const;
         unsigned int getFov() const;
         unsigned int getId() const;
-        unsigned int getScore() const;
+        int getScore() const;
         unsigned int getX() const;
         unsigned int getY() const;
         auto getType() const -> Type;
-        void setScore(unsigned int score);
+        void setDrawableObject(std::unique_ptr<DrawableObject>&& drawableObject);
+        void setId(unsigned int id);
+        void setScore(int score);
         void setX(unsigned int x);
         void setY(unsigned int y);
 
@@ -61,6 +70,7 @@ class Object {
         std::unique_ptr<Actor> actor;
         std::unique_ptr<DrawableObject> drawableObject;
         Type type;
+        int score;
         unsigned int
             /// How much can this object see.
             /// 0 means nothing, not even itself.
@@ -69,7 +79,6 @@ class Object {
             /// n means sees a rectangle of width 2 * (n - 1) + 1
             fov,
             id,
-            score,
             x,
             y
         ;
