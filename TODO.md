@@ -11,7 +11,6 @@
     Should we use raw seccomp, or a more full blown docker?
 -   shortcut to redo previous human action, specially for TAS mode
 -   optionally draw grids to screen for debugging
--   more human understandable textures (?) This allows human to cheat by using external world knowledge. Possibly use random letters as textures? 
 -   different action types for different actors
 -   choose which players the human will control from the CLI, allow any player to be chosen by ID (currently only possible to choose which player to observe, not control)
 -   use `std::random_device` for the random numbers as in http://stackoverflow.com/questions/322938/recommended-way-to-initialize-srand/13004555#13004555 Difficulty: RandomActor would have to be treated like HumanActor, as the input is not calculated entirely from the world view.

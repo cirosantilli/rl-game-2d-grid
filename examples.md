@@ -2,9 +2,23 @@
 
 ## Rogue mode
 
-    ./main.out
+    ./main.out -v 0 -W 550
+
+Here 550 assumes that the FOV is 5, which requires:
+
+      5 + 1 (player itself) + 5 = 11
+
+squares. And 550 is a multiple of 11 with of reasonable screen size.
 
 The world only updates when the player hits a key.
+
+## Rogue mode all seeing
+
+    ./main.out
+
+Cheat by being able to observe the entire world at once.
+
+Impossible is there are so many tiles that each tile is smaller than a pixel.
 
 ## Non-interactive simulation
 
@@ -60,13 +74,3 @@ used.
 You can fix some controls half-way. E.g. the following will move up:
 
 - `DOWN` `UP`, overrides the previous `DOWN` `SPACE`
-
-## Only view what the 0-th player (the first one) sees
-
-     ./main.out -v 0 -W 550
-
-Here 550 assumes that the FOV is 5, which requires:
-
-      5 + 1 (player itself) + 5 = 11
-
-squares. And 550 is a multiple of 11 with of reasonable screen size.

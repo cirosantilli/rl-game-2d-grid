@@ -117,7 +117,28 @@ class World {
         std::map<std::string, SDL_Texture *> textures;
 
         // Methods.
-        SDL_Texture * createSolidTexture(
+        void createImageTexture(
+            std::string id,
+            std::string path
+        );
+        // Take image, and replace:
+        // - transparent pixels with the given color
+        // - TODO non-transparent pixels with transparent ones
+        void createImageTextureBlitColor(
+            std::string id,
+            std::string path,
+            double r,
+            double g,
+            double b,
+            double a = 0.0
+        );
+        SDL_Surface* createSolidSurface(
+            double r,
+            double g,
+            double b,
+            double a
+        );
+        void createSolidTexture(
             std::string id,
             double r,
             double g,

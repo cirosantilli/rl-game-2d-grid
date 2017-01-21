@@ -5,6 +5,7 @@
 #include <sstream>
 #include <utility> // declval
 
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
 #include "action.hpp"
@@ -82,6 +83,9 @@ World::World(
         this->hud_text_x = this->windowWidthPix + margin;
         this->menu_text_x = margin;
         this->text_margin_y = margin;
+
+        // Image.
+        IMG_Init(IMG_INIT_PNG);
     }
     this->init(randomSeedGiven);
 }
@@ -90,6 +94,7 @@ World::~World() {
     if (this->display) {
         this->destroyTextures();
         TTF_Quit();
+        IMG_Quit();
         SDL_DestroyRenderer(this->renderer);
         SDL_DestroyWindow(this->window);
         SDL_Quit();
@@ -311,12 +316,14 @@ void World::init(bool reuseRandomSeed) {
         }
         this->tileWidthPix = this->windowWidthPix / fovWidth;
         this->tileHeightPix = this->windowHeightPix / fovHeight;
-        createSolidTexture("human", 1.0, 0.0, 0.0);
-        createSolidTexture("plant", 0.0, 1.0, 0.0);
-        createSolidTexture("eater", 1.0, 1.0, 0.0);
-        createSolidTexture("wall", 0.5, 0.5, 0.5);
-        createSolidTexture("bad_plant", 1.0, 0.5, 1.0);
-        createSolidTexture("great_plant", 1.0, 0.0, 1.0);
+        //this->createSolidTexture("plant", 0.0, 1.0, 0.0);
+        //this->createImageTexture("plant", "apple.png");
+        this->createImageTextureBlitColor("eater", "rabbit.png", 1.0, 1.0, 1.0);
+        this->createImageTextureBlitColor("human", "rabbit.png", 0.0, 0.0, 1.0);
+        this->createImageTextureBlitColor("plant", "apple.png", 1.0, 0.0, 0.0);
+        this->createImageTextureBlitColor("wall", "wall.png", 0.5, 0.5, 0.5);
+        this->createImageTextureBlitColor("bad_plant", "apple.png", 0.6, 0.4, 0.1);
+        this->createImageTextureBlitColor("great_plant", "apple.png", 1.0, 1.0, 0.0);
     }
 
     if (this->scenario == "empty") {
@@ -584,7 +591,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             // Plants
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
-                    if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                    if (this->isTileEmpty(x, y) && (std::rand() % 200 == 0)) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
                             "plant"
@@ -625,29 +632,80 @@ bool World::needFpsUpdate() const {
     return this->verbose || this->display;
 }
 
-SDL_Texture * World::createSolidTexture(
+void World::createImageTexture(
     std::string id,
+    std::string path
+) {
+    this->textures.emplace(id, IMG_LoadTexture(renderer, path.c_str()));
+}
+
+SDL_Surface* World::createSolidSurface(
     double r,
     double g,
     double b,
     double a
 ) {
-    int pitch = 0;
-    void *pixels = NULL;
-    SDL_Texture *texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_ARGB8888,
-        SDL_TEXTUREACCESS_STREAMING, this->tileWidthPix, this->tileHeightPix);
-    SDL_LockTexture(texture, NULL, &pixels, &pitch);
-    unsigned long TILE_AREA = this->tileHeightPix * this->tileWidthPix;
-    for (unsigned long idx = 0; idx < TILE_AREA; ++idx) {
+    SDL_Surface *surface;
+    surface = SDL_CreateRGBSurface(0, this->tileWidthPix, this->tileHeightPix, 32, 0, 0, 0, 0);
+    SDL_LockSurface(surface);
+    void *pixels = surface->pixels;
+    unsigned long tile_area = this->tileHeightPix * this->tileWidthPix;
+    for (unsigned long idx = 0; idx < tile_area; ++idx) {
         Uint8 *base = &((Uint8 *)pixels)[idx * N_COLOR_CHANNELS];
         *(base + 0) = b * World::COLOR_MAX;
         *(base + 1) = g * World::COLOR_MAX;
         *(base + 2) = r * World::COLOR_MAX;
         *(base + 3) = a * World::COLOR_MAX;
     }
-    SDL_UnlockTexture(texture);
+    SDL_UnlockSurface(surface);
+    return surface;
+}
+
+void World::createImageTextureBlitColor(
+    std::string id,
+    std::string path,
+    double r,
+    double g,
+    double b,
+    double a
+) {
+    SDL_Surface *src, *dst;
+    SDL_Texture *texture;
+    src = IMG_Load(path.c_str());
+    dst = this->createSolidSurface(r, g, b, a);
+    SDL_BlitScaled(src, NULL, dst, NULL);
+
+    // TODO make outter part (originally opaque)
+    // transparent to show actual background.
+    // Difficulty: must first scale down input image.
+    //SDL_LockSurface(src);
+    //void *pixels = src->pixels;
+    //unsigned long tile_area = this->tileHeightPix * this->tileWidthPix;
+    //for (unsigned long idx = 0; idx < tile_area; ++idx) {
+        //Uint8 *base = &((Uint8 *)pixels)[idx * N_COLOR_CHANNELS + 3];
+        //*base = World::COLOR_MAX - *base;
+    //}
+    //SDL_UnlockSurface(src);
+
+    texture = SDL_CreateTextureFromSurface(this->renderer, dst);
+    SDL_FreeSurface(src);
+    SDL_FreeSurface(dst);
     this->textures.emplace(id, texture);
-    return texture;
+}
+
+void World::createSolidTexture(
+    std::string id,
+    double r,
+    double g,
+    double b,
+    double a
+) {
+    SDL_Surface *surface;
+    SDL_Texture *texture;
+    surface = this->createSolidSurface(r, g, b, a);
+    texture = SDL_CreateTextureFromSurface(this->renderer, surface);
+    SDL_FreeSurface(surface);
+    this->textures.emplace(id, texture);
 }
 
 World::Rtree::const_query_iterator World::queryObjectsInFov(const Object& object) const {
