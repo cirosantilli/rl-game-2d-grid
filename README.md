@@ -11,6 +11,7 @@ Demo video: <https://youtu.be/TQ5k2u25eI8>
 1. [Examples](examples.md)
 1. [CLI options](cli-options.md)
 1. [TODO](TODO.md)
+1. [LICENSE](LICENSE.md)
 
 ![](screenshot.png)
 
