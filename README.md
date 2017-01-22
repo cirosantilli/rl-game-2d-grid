@@ -13,3 +13,5 @@ Demo video: <https://youtu.be/TQ5k2u25eI8>
 1. [TODO](TODO.md)
 
 ![](screenshot.png)
+
+Art from: <https://github.com/game-icons/icons>
