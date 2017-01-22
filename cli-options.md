@@ -60,6 +60,8 @@
     In particular, it becomes difficult to press multiple simultaneous keys
     consistently.
 
+-   `-P <x> <y>`: initial Position of the game window in the screen at startup
+
 -   `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way
     to show scenario list here. For now read source.
 

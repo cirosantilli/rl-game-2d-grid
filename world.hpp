@@ -38,7 +38,10 @@ class World {
             std::string scenario,
             int timeLimit,
             bool verbose,
-            bool spawn
+            bool spawn,
+            unsigned int windowPosX,
+            unsigned int windowPosY,
+            bool windowPosGiven
         );
         ~World();
         void draw() const;

@@ -42,7 +42,10 @@ World::World(
     std::string scenario,
     int timeLimit,
     bool verbose,
-    bool spawn
+    bool spawn,
+    unsigned int windowPosX,
+    unsigned int windowPosY,
+    bool windowPosGiven
 ) :
     display(display),
     showFov(showFov),
@@ -70,7 +73,10 @@ World::World(
             &this->window,
             &this->renderer
         );
-        SDL_SetWindowTitle(window, __FILE__);
+        SDL_SetWindowTitle(window, "General Game AI");
+        if (windowPosGiven) {
+            SDL_SetWindowPosition(this->window, windowPosX, windowPosY);
+        }
 
         // TTF.
         TTF_Init();

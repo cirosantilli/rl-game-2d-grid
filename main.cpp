@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
         limitFps = false,
         showFov = false,
         spawn = true,
+        windowPosGiven = false,
         verbose = false
     ;
     std::string scenario;
@@ -104,9 +105,11 @@ int main(int argc, char **argv) {
     int timeLimit = -1;
     unsigned int
         nHumanPlayers = 1,
-        randomSeed,
+        randomSeed = 0,
         showPlayerId = 0,
         width = 20,
+        windowPosX = 0,
+        windowPosY = 0,
         windowWidthPix = 500
     ;
 
@@ -127,6 +130,11 @@ int main(int argc, char **argv) {
                 holdKey = !holdKey;
             } else if (std::strcmp(argv[i], "-i") == 0) {
                 immediateAction = !immediateAction;
+            } else if (std::strcmp(argv[i], "-P") == 0) {
+                windowPosGiven = true;
+                windowPosX = std::strtol(argv[i + 1], NULL, 10);
+                windowPosY = std::strtol(argv[i + 2], NULL, 10);
+                i += 2;
             } else if (std::strcmp(argv[i], "-v") == 0) {
                 showPlayerId = std::strtol(argv[i + 1], NULL, 10);
                 i++;
@@ -187,7 +195,10 @@ int main(int argc, char **argv) {
         std::move(scenario),
         timeLimit,
         verbose,
-        spawn
+        spawn,
+        windowPosX,
+        windowPosY,
+        windowPosGiven
     );
 main_loop:
     lastTime = utils::get_secs();

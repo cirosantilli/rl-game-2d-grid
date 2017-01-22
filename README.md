@@ -9,3 +9,5 @@ Platform for a General Game AI competition
 1. [Examples](examples.md)
 1. [CLI options](cli-options.md)
 1. [TODO](TODO.md)
+
+![](screenshot.png)
