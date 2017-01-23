@@ -6,6 +6,8 @@ See:
 -   <http://www.gvgai.net/>. Large overlap. But we aim at "better" features like
     process separation, C++
 -   <http://togelius.blogspot.co.uk/2016/07/which-games-are-useful-for-testing.html>
+-   <https://github.com/cirosantilli/gpu-robot-vision-simulation-full-ai> superset
+    of this
 
 This is a game designed to be interesting for both computers and humans to play.
 
