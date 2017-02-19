@@ -41,7 +41,8 @@ class World {
             bool spawn,
             unsigned int windowPosX,
             unsigned int windowPosY,
-            bool windowPosGiven
+            bool windowPosGiven,
+            std::unique_ptr<std::map<std::string,std::string>> config
         );
         ~World();
         void draw() const;
@@ -118,6 +119,7 @@ class World {
         TTF_Font *font;
         objects_t objects;
         std::map<std::string, SDL_Texture *> textures;
+        std::unique_ptr<std::map<std::string,std::string>> config;
 
         // Methods.
         void createImageTexture(

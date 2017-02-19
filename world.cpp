@@ -45,7 +45,8 @@ World::World(
     bool spawn,
     unsigned int windowPosX,
     unsigned int windowPosY,
-    bool windowPosGiven
+    bool windowPosGiven,
+    std::unique_ptr<std::map<std::string,std::string>> config
 ) :
     display(display),
     showFov(showFov),
@@ -59,7 +60,8 @@ World::World(
     showPlayerId(showPlayerId),
     width(width),
     windowHeightPix(windowHeightPix),
-    windowWidthPix(windowWidthPix)
+    windowWidthPix(windowWidthPix),
+    config(std::move(config))
 {
     this->window = NULL;
     this->renderer = NULL;
@@ -457,19 +459,23 @@ void World::init(bool reuseRandomSeed) {
         }
 
         // Eaters that follow food.
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 400 == 0)) {
-                    this->createSingleTextureObject(
-                        std::make_unique<Object>(
-                            x,
-                            y,
-                            Object::Type::PLANT_EATER,
-                            std::make_unique<FollowTypeActor>(Object::Type::PLANT),
-                            fov
-                        ),
-                        "eater"
-                    );
+        {
+            auto f = this->config->find("frac-follow-eaters");
+            auto frac_follow_eaters = (f == this->config->end()) ? 0.0025 : std::stod(f->second);
+            for (unsigned int y = 1; y < this->height - 1; ++y) {
+                for (unsigned int x = 1; x < this->width - 1; ++x) {
+                    if (this->isTileEmpty(x, y) && (std::rand() / (double)RAND_MAX < frac_follow_eaters)) {
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(
+                                x,
+                                y,
+                                Object::Type::PLANT_EATER,
+                                std::make_unique<FollowTypeActor>(Object::Type::PLANT),
+                                fov
+                            ),
+                            "eater"
+                        );
+                    }
                 }
             }
         }

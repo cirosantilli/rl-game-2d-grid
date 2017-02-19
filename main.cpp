@@ -112,6 +112,10 @@ int main(int argc, char **argv) {
         windowPosY = 0,
         windowWidthPix = 500
     ;
+    // Random config CLI options, because lazy to create variables / docs
+    // for all of them. Mostly world parameters used only once at world creation time,
+    // because recompilation is too slow, and you must play around with those a lot.
+    auto config = std::make_unique<std::map<std::string,std::string>>();
 
     // Treat CLI arguments.
     for (decltype(argc) i = 1; i < argc; ++i) {
@@ -172,6 +176,9 @@ int main(int argc, char **argv) {
                 printHelp();
                 std::exit(EXIT_FAILURE);
             }
+        } else {
+            config->emplace(argv[i], argv[i+1]);
+            i++;
         }
     }
     auto windowHeightPix = windowWidthPix;
@@ -198,7 +205,8 @@ int main(int argc, char **argv) {
         spawn,
         windowPosX,
         windowPosY,
-        windowPosGiven
+        windowPosGiven,
+        std::move(config)
     );
 main_loop:
     lastTime = utils::get_secs();
