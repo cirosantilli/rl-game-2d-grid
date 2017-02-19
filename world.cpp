@@ -387,7 +387,79 @@ void World::init(bool reuseRandomSeed) {
             "plant"
         );
     } else {
-        // Place human players.
+        // Monuments are large pre-fabricated chunks (Rust terminology).
+        // Two monuments cannot overlap, and some random elements cannot appear
+        // inside monments, e.g. walls could block off entries.
+        typedef bgm::point<int, 2, bg::cs::cartesian> MonumentPoint;
+        typedef bgm::box<MonumentPoint> MonumentBox;
+        typedef bgi::rtree<MonumentBox, bgi::linear<16>> MonumentRtree;
+        MonumentRtree monumentRtree;
+
+        // Retangular rooms with a single door entry.
+        {
+            auto wmin = 5u;
+            auto hmin = 5u;
+            auto density = 20u;
+            if (wmin < this->width - 6 && wmin < this->height - 4) {
+                auto placed = 0u;
+                auto attempts = 0u;
+                auto max_placed = this->width * this->height / (density * density);
+                auto max_attempts = 2 * max_placed;
+                while(placed < max_placed && attempts < max_attempts) {
+                    auto w = wmin + std::rand() % (this->width / density);
+                    auto h = hmin + std::rand() % (this->height / density);
+                    auto x0 = 2 + std::rand() % (this->width - w - 3);
+                    auto y0 = 2 + std::rand() % (this->height - h - 3);
+                    auto monumentBox = MonumentBox(MonumentPoint(x0 - 1, y0 - 1), MonumentPoint(x0 + w + 1, y0 + h + 1));
+                    auto it = monumentRtree.qbegin(bgi::intersects(monumentBox));
+                    auto end = monumentRtree.qend();
+                    if (it == end) {
+                        auto xmax = x0 + w - 1;
+                        auto ymax = y0 + h - 1;
+                        auto door_side = std::rand() % 4;
+                        decltype(x0) door_pos = x0 + (std::rand() % w);
+                        if (door_side < 2) {
+                            door_pos = y0 + std::rand() % h;
+                        } else {
+                            door_pos = x0 + 1 + std::rand() % (w - 2);
+                        }
+                        for (auto y = y0; y <= ymax; ++y) {
+                            if (door_side != 0 || y != door_pos) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<Object>(x0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    "wall"
+                                );
+                            }
+                            if (door_side != 1 || y != door_pos) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<Object>(xmax, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    "wall"
+                                );
+                            }
+                        }
+                        for (auto x = x0 + 1; x <= xmax - 1; ++x) {
+                            if (door_side != 2 || x != door_pos) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<Object>(x, y0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    "wall"
+                                );
+                            }
+                            if (door_side != 3 || x != door_pos) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<Object>(x, ymax, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    "wall"
+                                );
+                            }
+                        }
+                        monumentRtree.insert(monumentBox);
+                        placed++;
+                    }
+                    attempts++;
+                }
+            }
+        }
+
+        // Human players.
         {
             decltype(this->nHumanPlayersInitial) totalPlayers = 0;
             while (totalPlayers < this->nHumanPlayersInitial) {
@@ -409,59 +481,9 @@ void World::init(bool reuseRandomSeed) {
             }
         }
 
-        // Retangular rooms with a single door entry.
-        {
-            auto wmin = 5u;
-            auto hmin = 5u;
-            if (wmin < this->width - 6 && wmin < this->height - 4) {
-                auto w = wmin + std::rand() % (this->width / 10);
-                auto h = hmin + std::rand() % (this->height / 10);
-                auto x0 = 2 + std::rand() % (this->width - w - 3);
-                auto y0 = 2 + std::rand() % (this->height - h - 3);
-                auto xmax = x0 + w - 1;
-                auto ymax = y0 + h - 1;
-                auto door_side = std::rand() % 4;
-                decltype(x0) door_pos = x0 + (std::rand() % w);
-                if (door_side < 2) {
-                    door_pos = y0 + std::rand() % h;
-                } else {
-                    door_pos = x0 + 1 + std::rand() % (w - 2);
-                }
-                for (auto y = y0; y <= ymax; ++y) {
-                    if (door_side != 0 || y != door_pos) {
-                        this->createSingleTextureObject(
-                            std::make_unique<Object>(x0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                            "wall"
-                        );
-                    }
-                    if (door_side != 1 || y != door_pos) {
-                        this->createSingleTextureObject(
-                            std::make_unique<Object>(xmax, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                            "wall"
-                        );
-                    }
-                }
-                for (auto x = x0 + 1; x <= xmax - 1; ++x) {
-                    if (door_side != 2 || x != door_pos) {
-                        this->createSingleTextureObject(
-                            std::make_unique<Object>(x, y0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                            "wall"
-                        );
-                    }
-                    if (door_side != 3 || x != door_pos) {
-                        this->createSingleTextureObject(
-                            std::make_unique<Object>(x, ymax, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                            "wall"
-                        );
-                    }
-                }
-            }
-        }
-
         // Eaters that follow food.
         {
-            auto f = this->config->find("frac-follow-eaters");
-            auto frac_follow_eaters = (f == this->config->end()) ? 0.0025 : std::stod(f->second);
+            auto frac_follow_eaters = this->getConfigDouble("frac-follow-eaters", 0.0025);
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (this->isTileEmpty(x, y) && (std::rand() / (double)RAND_MAX < frac_follow_eaters)) {
@@ -549,7 +571,9 @@ void World::init(bool reuseRandomSeed) {
         // A* becomes necessary.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 50 == 0)) {
+                auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
+                auto end = monumentRtree.qend();
+                if (it == end && this->isTileEmpty(x, y) && (std::rand() % 50 == 0)) {
                     this->createSingleTextureObject(
                         std::make_unique<Object>(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
                         "wall"
@@ -800,6 +824,11 @@ bool World::findObjectAtTile(Object **object, unsigned int x, unsigned int y) co
         *object = *it;
         return true;
     }
+}
+
+double World::getConfigDouble(std::string key, double default_) {
+    auto f = this->config->find(key);
+    return (f == this->config->end()) ? default_ : std::stod(f->second);
 }
 
 bool World::isGameOver() const {

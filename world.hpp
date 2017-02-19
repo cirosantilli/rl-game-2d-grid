@@ -21,6 +21,7 @@ class WorldView;
 // TODO make local to class.
 namespace bg = boost::geometry;
 namespace bgi = bg::index;
+namespace bgm = bg::model;
 
 class World {
     public:
@@ -74,7 +75,7 @@ class World {
         typedef std::vector<SDL_Texture*> textures_t;
 
         // Boost types.
-        typedef bg::model::box<Object> Box;
+        typedef bgm::box<Object> Box;
         typedef bgi::rtree<Object*, bgi::linear<16>> Rtree;
 
         // Data.
@@ -163,6 +164,7 @@ class World {
         /// Don't change it otherwise.
         /// Return true iff an object is present at that position.
         bool findObjectAtTile(Object **object, unsigned int x, unsigned int y) const;
+        double getConfigDouble(std::string key, double default_);
         unsigned int getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
