@@ -6,7 +6,7 @@
 
 Here 550 assumes that the FOV is 5, which requires:
 
-      5 + 1 (player itself) + 5 = 11
+    5 + 1 (player itself) + 5 = 11
 
 squares. And 550 is a multiple of 11 with of reasonable screen size.
 

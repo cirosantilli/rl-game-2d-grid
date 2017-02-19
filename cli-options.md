@@ -30,7 +30,7 @@
 -   `-H`: (Hold key) actions are taken if the player is holding at the end of a
     frame, a click is not needed.
 
-    The simulation advances automatically if the player is hodling any key at
+    The simulation advances automatically if the player is holding any key at
     the end of the frame.
 
     If a click action (-i) was taken during the previous frame, it gets

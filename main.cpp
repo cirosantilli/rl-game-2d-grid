@@ -68,18 +68,22 @@ static bool holdControls(
 
 static void cat(std::string filename) {
     std::ifstream file(filename);
-    std::string str;
-    while (std::getline(file, str)) {
-        std::cerr << str << std::endl;
+    if (file.is_open()) {
+        std::string str;
+        while (std::getline(file, str)) {
+            std::cout << str << std::endl;
+        }
+    } else {
+        throw std::runtime_error(std::string("could not open file for reading: ") + filename);
     }
 }
 
 static void printHelp() {
     cat("controls.md");
-    std::cerr << std::endl;
+    std::cout << std::endl;
     cat("examples.md");
-    std::cerr << std::endl;
-    cat("cli.md");
+    std::cout << std::endl;
+    cat("cli-options.md");
 }
 
 int main(int argc, char **argv) {
