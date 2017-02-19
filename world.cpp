@@ -1,6 +1,8 @@
 #include <cstdlib>
 #include <chrono>
+#include <functional> // function
 #include <iomanip> // setprecision
+#include <numeric> // partial_sum
 #include <set>
 #include <sstream>
 #include <utility> // declval
@@ -387,9 +389,33 @@ void World::init(bool reuseRandomSeed) {
             "plant"
         );
     } else {
+        // Walls closing off the scenario borders.
+        for (unsigned int y = 0; y < this->height; ++y) {
+            this->createSingleTextureObject(
+                std::make_unique<Object>(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                "wall"
+            );
+            this->createSingleTextureObject(
+                std::make_unique<Object>(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                "wall"
+            );
+        }
+        for (unsigned int x = 0; x < this->width; ++x) {
+            this->createSingleTextureObject(
+                std::make_unique<Object>(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                "wall"
+            );
+            this->createSingleTextureObject(
+                std::make_unique<Object>(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                "wall"
+            );
+        }
+
         // Monuments are large pre-fabricated chunks (Rust terminology).
         // Two monuments cannot overlap, and some random elements cannot appear
         // inside monments, e.g. walls could block off entries.
+        // TODO:find more elegant way to place them randomly:
+        // http://stackoverflow.com/questions/716558/place-random-non-overlapping-rectangles-on-a-panel
         typedef bgm::point<int, 2, bg::cs::cartesian> MonumentPoint;
         typedef bgm::box<MonumentPoint> MonumentBox;
         typedef bgi::rtree<MonumentBox, bgi::linear<16>> MonumentRtree;
@@ -459,7 +485,7 @@ void World::init(bool reuseRandomSeed) {
             }
         }
 
-        // Human players.
+        // Human players. The number must be exact.
         {
             decltype(this->nHumanPlayersInitial) totalPlayers = 0;
             while (totalPlayers < this->nHumanPlayersInitial) {
@@ -481,12 +507,13 @@ void World::init(bool reuseRandomSeed) {
             }
         }
 
-        // Eaters that follow food.
+        // Other objects.
         {
-            auto frac_follow_eaters = this->getConfigDouble("frac-follow-eaters", 0.0025);
-            for (unsigned int y = 1; y < this->height - 1; ++y) {
-                for (unsigned int x = 1; x < this->width - 1; ++x) {
-                    if (this->isTileEmpty(x, y) && (std::rand() / (double)RAND_MAX < frac_follow_eaters)) {
+            typedef std::pair<double, std::function<void(unsigned int, unsigned int)>> P;
+            auto p = std::vector<P> {
+                {
+                    this->getConfigDouble("frac-follow-eaters", 0.0025),
+                    [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<Object>(
                                 x,
@@ -498,86 +525,76 @@ void World::init(bool reuseRandomSeed) {
                             "eater"
                         );
                     }
-                }
-            }
-        }
-
-        // Random eaters.
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 400 == 0)) {
-                    this->createSingleTextureObject(
-                        std::make_unique<Object>(
-                            x,
-                            y,
-                            Object::Type::PLANT_EATER,
-                            std::make_unique<RandomActor>(),
-                            fov
-                        ),
-                        "eater"
-                    );
-                }
-            }
-        }
-
-        // Plants
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y)) {
-                    if (std::rand() % 1000 == 0) {
+                },
+                {
+                    this->getConfigDouble("frac-random-eaters", 0.0025),
+                    [&](unsigned int x, unsigned int y){
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(
+                                x,
+                                y,
+                                Object::Type::PLANT_EATER,
+                                std::make_unique<RandomActor>(),
+                                fov
+                            ),
+                            "eater"
+                        );
+                    }
+                },
+                {
+                    this->getConfigDouble("frac-great-plant", 0.001),
+                    [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), 5),
                             "great_plant"
                         );
-                    } else if (std::rand() % 100 == 0) {
+                    }
+                },
+                {
+                    this->getConfigDouble("frac-great-plant", 0.01),
+                    [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), -1),
                             "bad_plant"
                         );
-                    } else if (std::rand() % 20 == 0) {
+                    }
+                },
+                {
+                    this->getConfigDouble("frac-plant", 0.05),
+                    [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
                             "plant"
                         );
                     }
-                }
+                },
+                {
+                    this->getConfigDouble("frac-wall", 0.01),
+                    [&](unsigned int x, unsigned int y){
+                        auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
+                        auto end = monumentRtree.qend();
+                        if (it == end) {
+                            this->createSingleTextureObject(
+                                std::make_unique<Object>(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                "wall"
+                            );
+                        }
+                    }
+                },
+            };
+            std::partial_sum(p.begin(), p.end(), p.begin(),
+                [](const P& x, const P& y){return P(x.first + y.first, y.second);}
+            );
+            std::map<P::first_type, P::second_type> cumulative(p.begin(), p.end());
+            auto it = cumulative.rbegin();
+            if (it->first != 1.0) {
+                cumulative.emplace(1.0, [&](unsigned int, unsigned int){});
             }
-        }
-
-        // Walls closing off the scenario borders.
-        for (unsigned int y = 0; y < this->height; ++y) {
-            this->createSingleTextureObject(
-                std::make_unique<Object>(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                "wall"
-            );
-            this->createSingleTextureObject(
-                std::make_unique<Object>(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                "wall"
-            );
-        }
-        for (unsigned int x = 0; x < this->width; ++x) {
-            this->createSingleTextureObject(
-                std::make_unique<Object>(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                "wall"
-            );
-            this->createSingleTextureObject(
-                std::make_unique<Object>(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                "wall"
-            );
-        }
-
-        // Random walls.
-        // These completely destroy robot players that just go straight to some random food, as they keep hitting that wall.
-        // A* becomes necessary.
-        for (unsigned int y = 1; y < this->height - 1; ++y) {
-            for (unsigned int x = 1; x < this->width - 1; ++x) {
-                auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
-                auto end = monumentRtree.qend();
-                if (it == end && this->isTileEmpty(x, y) && (std::rand() % 50 == 0)) {
-                    this->createSingleTextureObject(
-                        std::make_unique<Object>(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
-                        "wall"
-                    );
+            for (unsigned int y = 1; y < this->height - 1; ++y) {
+                for (unsigned int x = 1; x < this->width - 1; ++x) {
+                    if (this->isTileEmpty(x, y)) {
+                        cumulative.lower_bound(std::rand() / (double)RAND_MAX)->second(x, y);
+                    }
                 }
             }
         }
@@ -676,7 +693,10 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             // Plants
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
-                    if (this->isTileEmpty(x, y) && (std::rand() % 1000 == 0)) {
+                    if (
+                            this->isTileEmpty(x, y) &&
+                            (std::rand() / (double)RAND_MAX) < getConfigDouble("frac-plant-spawn", 0.0005)
+                    ) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
                             "plant"
