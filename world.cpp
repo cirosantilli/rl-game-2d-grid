@@ -407,10 +407,59 @@ void World::init(bool reuseRandomSeed) {
             }
         }
 
+        // Retangular rooms with a single door entry.
+        {
+            auto wmin = 5u;
+            auto hmin = 5u;
+            if (wmin < this->width - 6 && wmin < this->height - 4) {
+                auto w = wmin + std::rand() % (this->width / 10);
+                auto h = hmin + std::rand() % (this->height / 10);
+                auto x0 = 2 + std::rand() % (this->width - w - 3);
+                auto y0 = 2 + std::rand() % (this->height - h - 3);
+                auto xmax = x0 + w - 1;
+                auto ymax = y0 + h - 1;
+                auto door_side = std::rand() % 4;
+                decltype(x0) door_pos = x0 + (std::rand() % w);
+                if (door_side < 2) {
+                    door_pos = y0 + std::rand() % h;
+                } else {
+                    door_pos = x0 + 1 + std::rand() % (w - 2);
+                }
+                for (auto y = y0; y <= ymax; ++y) {
+                    if (door_side != 0 || y != door_pos) {
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(x0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                            "wall"
+                        );
+                    }
+                    if (door_side != 1 || y != door_pos) {
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(xmax, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                            "wall"
+                        );
+                    }
+                }
+                for (auto x = x0 + 1; x <= xmax - 1; ++x) {
+                    if (door_side != 2 || x != door_pos) {
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(x, y0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                            "wall"
+                        );
+                    }
+                    if (door_side != 3 || x != door_pos) {
+                        this->createSingleTextureObject(
+                            std::make_unique<Object>(x, ymax, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                            "wall"
+                        );
+                    }
+                }
+            }
+        }
+
         // Eaters that follow food.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 400 == 0)) {
                     this->createSingleTextureObject(
                         std::make_unique<Object>(
                             x,
@@ -428,7 +477,7 @@ void World::init(bool reuseRandomSeed) {
         // Random eaters.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 100 == 0)) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 400 == 0)) {
                     this->createSingleTextureObject(
                         std::make_unique<Object>(
                             x,
@@ -447,17 +496,17 @@ void World::init(bool reuseRandomSeed) {
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
                 if (this->isTileEmpty(x, y)) {
-                    if (std::rand() % 200 == 0) {
+                    if (std::rand() % 1000 == 0) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), 5),
                             "great_plant"
                         );
-                    } else if (std::rand() % 50 == 0) {
+                    } else if (std::rand() % 100 == 0) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), -1),
                             "bad_plant"
                         );
-                    } else if (std::rand() % 5 == 0) {
+                    } else if (std::rand() % 20 == 0) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
                             "plant"
@@ -490,11 +539,11 @@ void World::init(bool reuseRandomSeed) {
         }
 
         // Random walls.
-        // These completely destroy robot players that just to straight to some random food, as they keep hitting that wall.
+        // These completely destroy robot players that just go straight to some random food, as they keep hitting that wall.
         // A* becomes necessary.
         for (unsigned int y = 1; y < this->height - 1; ++y) {
             for (unsigned int x = 1; x < this->width - 1; ++x) {
-                if (this->isTileEmpty(x, y) && (std::rand() % 5 == 0)) {
+                if (this->isTileEmpty(x, y) && (std::rand() % 50 == 0)) {
                     this->createSingleTextureObject(
                         std::make_unique<Object>(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
                         "wall"
@@ -597,7 +646,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             // Plants
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
-                    if (this->isTileEmpty(x, y) && (std::rand() % 200 == 0)) {
+                    if (this->isTileEmpty(x, y) && (std::rand() % 1000 == 0)) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
                             "plant"
