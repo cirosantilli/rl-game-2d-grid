@@ -13,7 +13,6 @@
 -   optionally draw grids to screen for debugging
 -   different action types for different actors
 -   choose which players the human will control from the CLI, allow any player to be chosen by ID (currently only possible to choose which player to observe, not control)
--   use `std::random_device` for the random numbers as in http://stackoverflow.com/questions/322938/recommended-way-to-initialize-srand/13004555#13004555 Difficulty: RandomActor would have to be treated like HumanActor, as the input is not calculated entirely from the world view.
 -   if the simulation is large, most keys get ignored. Why?
 -   save current world state. Hard, as it requires saving the entire actor state, so basically saving a program for later. We could require actors to implement a serialize method however...
 -   ddef3b5523fbfca746e83bfc31758b2c71f0787a `-H` limits FPS to the default `1.0` if you hold a key like LEFT, but `-b -H` does not limit FPS. `-f -1.0` works as workaround, but options confusing. Either missing `-f` should always mean unlimited FPS, or `-f -1.0` should be required.

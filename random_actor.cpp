@@ -3,10 +3,14 @@
 #include "action.hpp"
 #include "random_actor.hpp"
 
+RandomActor::RandomActor(unsigned int randomSeed) {
+    this->prng.seed(randomSeed);
+}
+
 Action RandomActor::act(const WorldView&) {
     Action::MoveX x = Action::MoveX::NONE;
     Action::MoveY y = Action::MoveY::NONE;
-    switch (std::rand() % 3) {
+    switch (this->uniformUintDistribution(this->prng) % 3) {
         case 0:
         break;
         case 1:
@@ -16,7 +20,7 @@ Action RandomActor::act(const WorldView&) {
         case 2:
         break;
     }
-    switch (std::rand() % 3) {
+    switch (this->uniformUintDistribution(this->prng) % 3) {
         case 0:
         break;
         case 1:

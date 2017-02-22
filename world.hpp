@@ -4,6 +4,7 @@
 #include <ctime>
 #include <iostream>
 #include <memory>
+#include <random> // mt19937, uniform_int_distribution, uniform_real_distribution
 #include <set>
 #include <string>
 #include <vector>
@@ -92,6 +93,7 @@ class World {
         int
             timeLimit
         ;
+        std::mt19937 prng;
         std::string scenario;
         unsigned int
             height,
@@ -120,6 +122,8 @@ class World {
         TTF_Font *font;
         objects_t objects;
         std::map<std::string, SDL_Texture *> textures;
+        std::uniform_int_distribution<unsigned int> uniformUintDistribution;
+        std::uniform_real_distribution<> uniformDoubleDistribution;
         std::unique_ptr<std::map<std::string,std::string>> config;
 
         // Methods.
@@ -178,6 +182,8 @@ class World {
             unsigned int width,
             unsigned int height
         ) const;
+        unsigned int randUint();
+        double randDouble();
         void updatePosition(Object& object, unsigned int x, unsigned int y);
 
         // Static const.

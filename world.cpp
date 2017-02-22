@@ -3,6 +3,7 @@
 #include <functional> // function
 #include <iomanip> // setprecision
 #include <numeric> // partial_sum
+#include <random> // random_device
 #include <set>
 #include <sstream>
 #include <utility> // declval
@@ -294,9 +295,9 @@ void World::destroyTextures() {
 void World::init(bool reuseRandomSeed) {
     // Randomness.
     if (!reuseRandomSeed) {
-        this->randomSeed = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        this->randomSeed = std::random_device()();
     }
-    std::srand(this->randomSeed);
+    this->prng.seed(this->randomSeed);
     if (this->verbose) {
         std::cout << "randomSeed " << randomSeed << '\n';
     }
@@ -432,22 +433,22 @@ void World::init(bool reuseRandomSeed) {
                 auto max_placed = this->width * this->height / (density * density);
                 auto max_attempts = 2 * max_placed;
                 while(placed < max_placed && attempts < max_attempts) {
-                    auto w = wmin + std::rand() % (this->width / density);
-                    auto h = hmin + std::rand() % (this->height / density);
-                    auto x0 = 2 + std::rand() % (this->width - w - 3);
-                    auto y0 = 2 + std::rand() % (this->height - h - 3);
+                    auto w = wmin + this->randUint() % (this->width / density);
+                    auto h = hmin + this->randUint() % (this->height / density);
+                    auto x0 = 2 + this->randUint() % (this->width - w - 3);
+                    auto y0 = 2 + this->randUint() % (this->height - h - 3);
                     auto monumentBox = MonumentBox(MonumentPoint(x0 - 1, y0 - 1), MonumentPoint(x0 + w + 1, y0 + h + 1));
                     auto it = monumentRtree.qbegin(bgi::intersects(monumentBox));
                     auto end = monumentRtree.qend();
                     if (it == end) {
                         auto xmax = x0 + w - 1;
                         auto ymax = y0 + h - 1;
-                        auto door_side = std::rand() % 4;
-                        decltype(x0) door_pos = x0 + (std::rand() % w);
+                        auto door_side = this->randUint() % 4;
+                        decltype(x0) door_pos = x0 + (this->randUint() % w);
                         if (door_side < 2) {
-                            door_pos = y0 + std::rand() % h;
+                            door_pos = y0 + this->randUint() % h;
                         } else {
-                            door_pos = x0 + 1 + std::rand() % (w - 2);
+                            door_pos = x0 + 1 + this->randUint() % (w - 2);
                         }
                         for (auto y = y0; y <= ymax; ++y) {
                             if (door_side != 0 || y != door_pos) {
@@ -489,8 +490,8 @@ void World::init(bool reuseRandomSeed) {
         {
             decltype(this->nHumanPlayersInitial) totalPlayers = 0;
             while (totalPlayers < this->nHumanPlayersInitial) {
-                unsigned int x = 1 + std::rand() % (this->width - 2);
-                unsigned int y = 1 + std::rand() % (this->height - 2);
+                unsigned int x = 1 + this->randUint() % (this->width - 2);
+                unsigned int y = 1 + this->randUint() % (this->height - 2);
                 if (this->isTileEmpty(x, y)) {
                     this->createSingleTextureObject(
                         std::make_unique<Object>(
@@ -534,7 +535,7 @@ void World::init(bool reuseRandomSeed) {
                                 x,
                                 y,
                                 Object::Type::PLANT_EATER,
-                                std::make_unique<RandomActor>(),
+                                std::make_unique<RandomActor>(this->randomSeed),
                                 fov
                             ),
                             "eater"
@@ -593,7 +594,7 @@ void World::init(bool reuseRandomSeed) {
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (this->isTileEmpty(x, y)) {
-                        cumulative.lower_bound(std::rand() / (double)RAND_MAX)->second(x, y);
+                        cumulative.lower_bound(this->randDouble())->second(x, y);
                     }
                 }
             }
@@ -695,7 +696,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (
                             this->isTileEmpty(x, y) &&
-                            (std::rand() / (double)RAND_MAX) < getConfigDouble("frac-plant-spawn", 0.0005)
+                            (this->randDouble() < getConfigDouble("frac-plant-spawn", 0.0005))
                     ) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
@@ -950,6 +951,14 @@ void World::updatePosition(Object& object, unsigned int x, unsigned int y) {
     object.setX(x);
     object.setY(y);
     this->rtree.insert(&object);
+}
+
+unsigned int World::randUint() {
+    return this->uniformUintDistribution(this->prng);
+}
+
+double World::randDouble() {
+    return this->uniformDoubleDistribution(this->prng);
 }
 
 unsigned int World::getNextFreeObjectId() {
