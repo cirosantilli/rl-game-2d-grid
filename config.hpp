@@ -11,8 +11,8 @@ class Config {
         /// Public becase we are lazy to write code to preprocess all configs here:
         /// not neededd for configs that are only used once at startup.
         double getConfigDouble(std::string key, double default_);
-        double fracPlantSpawn;
-        double treeFracPlantSpawn;
+        double fracFruitSpawn;
+        double treeFracFruitSpawn;
     private:
         std::unique_ptr<std::map<std::string, std::string>> config;
 };

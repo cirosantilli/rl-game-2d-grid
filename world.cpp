@@ -24,7 +24,7 @@
 #include "move_up_actor.hpp"
 #include "object.hpp"
 #include "object_view.hpp"
-#include "plant_object.hpp"
+#include "fruit_object.hpp"
 #include "random_actor.hpp"
 #include "single_texture_drawable_object.hpp"
 #include "utils.hpp"
@@ -327,14 +327,14 @@ void World::init(bool reuseRandomSeed) {
         }
         this->tileWidthPix = this->windowWidthPix / fovWidth;
         this->tileHeightPix = this->windowHeightPix / fovHeight;
-        //this->createSolidTexture("plant", 0.0, 1.0, 0.0);
-        //this->createImageTexture("plant", "apple.png");
+        //this->createSolidTexture("fruit", 0.0, 1.0, 0.0);
+        //this->createImageTexture("fruit", "apple.png");
         this->createImageTextureBlitColor("eater", "rabbit.png", 1.0, 1.0, 1.0);
         this->createImageTextureBlitColor("human", "rabbit.png", 0.0, 0.0, 1.0);
-        this->createImageTextureBlitColor("plant", "apple.png", 1.0, 0.0, 0.0);
+        this->createImageTextureBlitColor("fruit", "apple.png", 1.0, 0.0, 0.0);
         this->createImageTextureBlitColor("wall", "wall.png", 0.5, 0.5, 0.5);
-        this->createImageTextureBlitColor("bad_plant", "apple.png", 0.6, 0.4, 0.1);
-        this->createImageTextureBlitColor("great_plant", "apple.png", 1.0, 1.0, 0.0);
+        this->createImageTextureBlitColor("bad_fruit", "apple.png", 0.6, 0.4, 0.1);
+        this->createImageTextureBlitColor("great_fruit", "apple.png", 1.0, 1.0, 0.0);
         this->createImageTextureBlitColor("tree", "tree.png", 0.0, 1.0, 0.0);
     }
 
@@ -344,7 +344,7 @@ void World::init(bool reuseRandomSeed) {
             std::make_unique<Object>(
                 10,
                 10,
-                Object::Type::PLANT_EATER,
+                Object::Type::FRUIT_EATER,
                 std::make_unique<HumanActor>(),
                 fov
             ),
@@ -355,7 +355,7 @@ void World::init(bool reuseRandomSeed) {
             std::make_unique<Object>(
                 10,
                 10,
-                Object::Type::PLANT_EATER,
+                Object::Type::FRUIT_EATER,
                 std::make_unique<HumanActor>(),
                 fov
             ),
@@ -371,24 +371,24 @@ void World::init(bool reuseRandomSeed) {
             ),
             "wall"
         );
-    } else if (this->scenario == "plant") {
+    } else if (this->scenario == "fruit") {
         this->createSingleTextureObject(
             std::make_unique<Object>(
                 10,
                 10,
-                Object::Type::PLANT_EATER,
+                Object::Type::FRUIT_EATER,
                 std::make_unique<HumanActor>(),
                 fov
             ),
             "human"
         );
         this->createSingleTextureObject(
-            std::make_unique<PlantObject>(
+            std::make_unique<FruitObject>(
                 14,
                 10,
                 std::make_unique<DoNothingActor>()
             ),
-            "plant"
+            "fruit"
         );
     } else {
         // Walls closing off the scenario borders.
@@ -498,7 +498,7 @@ void World::init(bool reuseRandomSeed) {
                         std::make_unique<Object>(
                             x,
                             y,
-                            Object::Type::PLANT_EATER,
+                            Object::Type::FRUIT_EATER,
                             std::make_unique<HumanActor>(),
                             fov
                         ),
@@ -520,8 +520,8 @@ void World::init(bool reuseRandomSeed) {
                             std::make_unique<Object>(
                                 x,
                                 y,
-                                Object::Type::PLANT_EATER,
-                                std::make_unique<FollowTypeActor>(Object::Type::PLANT),
+                                Object::Type::FRUIT_EATER,
+                                std::make_unique<FollowTypeActor>(Object::Type::FRUIT),
                                 fov
                             ),
                             "eater"
@@ -535,7 +535,7 @@ void World::init(bool reuseRandomSeed) {
                             std::make_unique<Object>(
                                 x,
                                 y,
-                                Object::Type::PLANT_EATER,
+                                Object::Type::FRUIT_EATER,
                                 std::make_unique<RandomActor>(this->randomSeed),
                                 fov
                             ),
@@ -544,29 +544,29 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-great-plant", 0.0002),
+                    this->config.getConfigDouble("frac-great-fruit", 0.0002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), 5),
-                            "great_plant"
+                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>(), 5),
+                            "great_fruit"
                         );
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-great-plant", 0.002),
+                    this->config.getConfigDouble("frac-great-fruit", 0.002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), -1),
-                            "bad_plant"
+                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>(), -1),
+                            "bad_fruit"
                         );
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-plant", 0.01),
+                    this->config.getConfigDouble("frac-fruit", 0.01),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
-                            "plant"
+                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>()),
+                            "fruit"
                         );
                     }
                 },
@@ -684,17 +684,17 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                 }
 
                 auto objectType = object->getType();
-                if (objectType == Object::Type::PLANT_EATER) {
+                if (objectType == Object::Type::FRUIT_EATER) {
                     Object *objectAtTarget;
                     bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
                     bool shouldMove = false;
                     if (tileNonEmpty) {
                         auto targetType = objectAtTarget->getType();
-                        if (targetType == Object::Type::PLANT) {
+                        if (targetType == Object::Type::FRUIT) {
                             // TODO: avoid renaming here. But then rtree.remove fails.
-                            auto plantObjectAtTarget = static_cast<PlantObject*>(objectAtTarget);
+                            auto fruitObjectAtTarget = static_cast<FruitObject*>(objectAtTarget);
                             shouldMove = true;
-                            object->setScore(object->getScore() + plantObjectAtTarget->getValue());
+                            object->setScore(object->getScore() + fruitObjectAtTarget->getValue());
                             this->deleteObject(objectAtTarget);
                         }
                     } else {
@@ -705,12 +705,12 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                     }
                 } else if (objectType == Object::Type::TREE) {
                     auto tree_radius = 5u;
-                    for (unsigned int yplant = std::max((int)y - (int)tree_radius, 0); yplant <= std::min(y + tree_radius, this->height - 1); ++yplant) {
-                        for (unsigned int xplant = std::max((int)x - (int)tree_radius, 0); xplant <= std::min(x + tree_radius, this->width - 1); ++xplant) {
-                            if (this->randDouble() < this->config.treeFracPlantSpawn && this->isTileEmpty(xplant, yplant)) {
+                    for (unsigned int yfruit = std::max((int)y - (int)tree_radius, 0); yfruit <= std::min(y + tree_radius, this->height - 1); ++yfruit) {
+                        for (unsigned int xfruit = std::max((int)x - (int)tree_radius, 0); xfruit <= std::min(x + tree_radius, this->width - 1); ++xfruit) {
+                            if (this->randDouble() < this->config.treeFracFruitSpawn && this->isTileEmpty(xfruit, yfruit)) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<PlantObject>(xplant, yplant, std::make_unique<DoNothingActor>()),
-                                    "plant"
+                                    std::make_unique<FruitObject>(xfruit, yfruit, std::make_unique<DoNothingActor>()),
+                                    "fruit"
                                 );
                             }
                         }
@@ -721,16 +721,16 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
 
         // Spawn new objects randomly.
         if (this->spawn) {
-            // Plants
+            // Fruits
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (
                         this->isTileEmpty(x, y) &&
-                        (this->randDouble() < this->config.fracPlantSpawn)
+                        (this->randDouble() < this->config.fracFruitSpawn)
                     ) {
                         this->createSingleTextureObject(
-                            std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
-                            "plant"
+                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>()),
+                            "fruit"
                         );
                     }
                 }

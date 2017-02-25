@@ -21,8 +21,8 @@ class Object {
             FLEE_HUMAN,
             HUMAN,
             WALL,
-            PLANT,
-            PLANT_EATER,
+            FRUIT,
+            FRUIT_EATER,
             TREE,
         };
         Object();

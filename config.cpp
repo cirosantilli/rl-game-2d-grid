@@ -3,8 +3,8 @@
 Config::Config(std::unique_ptr<std::map<std::string, std::string>> config) :
     config(std::move(config))
 {
-    this->fracPlantSpawn = this->getConfigDouble("frac-plant-spawn", 0.0001);
-    this->treeFracPlantSpawn = this->getConfigDouble("tree-frac-plant-spawn", 0.005);
+    this->fracFruitSpawn = this->getConfigDouble("frac-fruit-spawn", 0.0001);
+    this->treeFracFruitSpawn = this->getConfigDouble("tree-frac-fruit-spawn", 0.005);
 }
 
 double Config::getConfigDouble(std::string key, double default_) {

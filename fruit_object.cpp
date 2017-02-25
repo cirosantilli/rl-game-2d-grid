@@ -1,9 +1,9 @@
-#include "plant_object.hpp"
+#include "fruit_object.hpp"
 
 #include "actor.hpp"
 #include "drawable_object.hpp"
 
-PlantObject::PlantObject(
+FruitObject::FruitObject(
     unsigned int x,
     unsigned int y,
     std::unique_ptr<Actor> actor,
@@ -12,13 +12,13 @@ PlantObject::PlantObject(
     Object(
         x,
         y,
-        Type::PLANT,
+        Type::FRUIT,
         std::move(actor),
         0
     ),
     value(value)
 {}
 
-int PlantObject::getValue() {
+int FruitObject::getValue() {
     return this->value;
 }

@@ -102,11 +102,11 @@ std::ostream& operator<<(std::ostream& os, const Object::Type& t) {
         case Object::Type::WALL:
             os << "WALL";
         break;
-        case Object::Type::PLANT:
-            os << "PLANT";
+        case Object::Type::FRUIT:
+            os << "FRUIT";
         break;
-        case Object::Type::PLANT_EATER:
-            os << "PLANT_EATER";
+        case Object::Type::FRUIT_EATER:
+            os << "FRUIT_EATER";
         break;
         default:
             assert(false);

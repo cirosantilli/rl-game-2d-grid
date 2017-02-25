@@ -1,17 +1,17 @@
-#ifndef PLANT_OBJECT_HPP
-#define PLANT_OBJECT_HPP
+#ifndef FRUIT_OBJECT_HPP
+#define FRUIT_OBJECT_HPP
 
 #include "object.hpp"
 
-class PlantObject : public Object {
+class FruitObject : public Object {
     public:
-        PlantObject(
+        FruitObject(
             unsigned int x,
             unsigned int y,
             std::unique_ptr<Actor> actor,
             unsigned int value = 1
         );
-        // How much this plant is worth to eater.
+        // How much this fruit is worth to eater.
         int getValue();
     private:
         int value;
