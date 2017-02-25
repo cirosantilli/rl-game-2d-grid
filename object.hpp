@@ -22,7 +22,8 @@ class Object {
             HUMAN,
             WALL,
             PLANT,
-            PLANT_EATER
+            PLANT_EATER,
+            TREE,
         };
         Object();
         virtual ~Object();

@@ -55,6 +55,7 @@ World::World(
     showFov(showFov),
     spawn(spawn),
     verbose(verbose),
+    config(std::move(config)),
     timeLimit(timeLimit),
     scenario(std::move(scenario)),
     height(height),
@@ -63,8 +64,7 @@ World::World(
     showPlayerId(showPlayerId),
     width(width),
     windowHeightPix(windowHeightPix),
-    windowWidthPix(windowWidthPix),
-    config(std::move(config))
+    windowWidthPix(windowWidthPix)
 {
     this->window = NULL;
     this->renderer = NULL;
@@ -335,6 +335,7 @@ void World::init(bool reuseRandomSeed) {
         this->createImageTextureBlitColor("wall", "wall.png", 0.5, 0.5, 0.5);
         this->createImageTextureBlitColor("bad_plant", "apple.png", 0.6, 0.4, 0.1);
         this->createImageTextureBlitColor("great_plant", "apple.png", 1.0, 1.0, 0.0);
+        this->createImageTextureBlitColor("tree", "tree.png", 0.0, 1.0, 0.0);
     }
 
     if (this->scenario == "empty") {
@@ -513,7 +514,7 @@ void World::init(bool reuseRandomSeed) {
             typedef std::pair<double, std::function<void(unsigned int, unsigned int)>> P;
             auto p = std::vector<P> {
                 {
-                    this->getConfigDouble("frac-follow-eaters", 0.0025),
+                    this->config.getConfigDouble("frac-follow-eaters", 0.0025),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<Object>(
@@ -528,7 +529,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->getConfigDouble("frac-random-eaters", 0.0025),
+                    this->config.getConfigDouble("frac-random-eaters", 0.0025),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<Object>(
@@ -543,7 +544,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->getConfigDouble("frac-great-plant", 0.001),
+                    this->config.getConfigDouble("frac-great-plant", 0.0002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), 5),
@@ -552,7 +553,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->getConfigDouble("frac-great-plant", 0.01),
+                    this->config.getConfigDouble("frac-great-plant", 0.002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>(), -1),
@@ -561,7 +562,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->getConfigDouble("frac-plant", 0.05),
+                    this->config.getConfigDouble("frac-plant", 0.01),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
@@ -570,7 +571,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->getConfigDouble("frac-wall", 0.01),
+                    this->config.getConfigDouble("frac-wall", 0.01),
                     [&](unsigned int x, unsigned int y){
                         auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
                         auto end = monumentRtree.qend();
@@ -582,14 +583,29 @@ void World::init(bool reuseRandomSeed) {
                         }
                     }
                 },
+                {
+                    this->config.getConfigDouble("frac-tree", 0.001),
+                    [&](unsigned int x, unsigned int y){
+                        auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
+                        auto end = monumentRtree.qend();
+                        if (it == end) {
+                            this->createSingleTextureObject(
+                                std::make_unique<Object>(x, y, Object::Type::TREE, std::make_unique<DoNothingActor>(), 0),
+                                "tree"
+                            );
+                        }
+                    }
+                },
             };
             std::partial_sum(p.begin(), p.end(), p.begin(),
                 [](const P& x, const P& y){return P(x.first + y.first, y.second);}
             );
             std::map<P::first_type, P::second_type> cumulative(p.begin(), p.end());
-            auto it = cumulative.rbegin();
-            if (it->first != 1.0) {
+            auto last_p = cumulative.rbegin()->first;
+            if (last_p < 1.0) {
                 cumulative.emplace(1.0, [&](unsigned int, unsigned int){});
+            } else if (last_p > 1.0) {
+                throw std::runtime_error(std::string("probability sum > 1"));
             }
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
@@ -667,24 +683,38 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                     }
                 }
 
-                Object *objectAtTarget;
-                bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
-                bool shouldMove = false;
-                if (tileNonEmpty) {
-                    auto objectType = object->getType();
-                    auto targetType = objectAtTarget->getType();
-                    if (objectType == Object::Type::PLANT_EATER && targetType == Object::Type::PLANT) {
-                        // TODO: avoid renaming here. But then rtree.remove fails.
-                        PlantObject *plantObjectAtTarget = static_cast<PlantObject*>(objectAtTarget);
+                auto objectType = object->getType();
+                if (objectType == Object::Type::PLANT_EATER) {
+                    Object *objectAtTarget;
+                    bool tileNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
+                    bool shouldMove = false;
+                    if (tileNonEmpty) {
+                        auto targetType = objectAtTarget->getType();
+                        if (targetType == Object::Type::PLANT) {
+                            // TODO: avoid renaming here. But then rtree.remove fails.
+                            auto plantObjectAtTarget = static_cast<PlantObject*>(objectAtTarget);
+                            shouldMove = true;
+                            object->setScore(object->getScore() + plantObjectAtTarget->getValue());
+                            this->deleteObject(objectAtTarget);
+                        }
+                    } else {
                         shouldMove = true;
-                        object->setScore(object->getScore() + plantObjectAtTarget->getValue());
-                        this->deleteObject(objectAtTarget);
                     }
-                } else {
-                    shouldMove = true;
-                }
-                if (shouldMove) {
-                    this->updatePosition(*object, x, y);
+                    if (shouldMove) {
+                        this->updatePosition(*object, x, y);
+                    }
+                } else if (objectType == Object::Type::TREE) {
+                    auto tree_radius = 5u;
+                    for (unsigned int yplant = std::max((int)y - (int)tree_radius, 0); yplant <= std::min(y + tree_radius, this->height - 1); ++yplant) {
+                        for (unsigned int xplant = std::max((int)x - (int)tree_radius, 0); xplant <= std::min(x + tree_radius, this->width - 1); ++xplant) {
+                            if (this->randDouble() < this->config.treeFracPlantSpawn && this->isTileEmpty(xplant, yplant)) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<PlantObject>(xplant, yplant, std::make_unique<DoNothingActor>()),
+                                    "plant"
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -695,8 +725,8 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
             for (unsigned int y = 1; y < this->height - 1; ++y) {
                 for (unsigned int x = 1; x < this->width - 1; ++x) {
                     if (
-                            this->isTileEmpty(x, y) &&
-                            (this->randDouble() < getConfigDouble("frac-plant-spawn", 0.0005))
+                        this->isTileEmpty(x, y) &&
+                        (this->randDouble() < this->config.fracPlantSpawn)
                     ) {
                         this->createSingleTextureObject(
                             std::make_unique<PlantObject>(x, y, std::make_unique<DoNothingActor>()),
@@ -845,11 +875,6 @@ bool World::findObjectAtTile(Object **object, unsigned int x, unsigned int y) co
         *object = *it;
         return true;
     }
-}
-
-double World::getConfigDouble(std::string key, double default_) {
-    auto f = this->config->find(key);
-    return (f == this->config->end()) ? default_ : std::stod(f->second);
 }
 
 bool World::isGameOver() const {

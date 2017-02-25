@@ -3,7 +3,7 @@
 
 #include <ctime>
 #include <iostream>
-#include <memory>
+#include <memory> // unique_ptr
 #include <random> // mt19937, uniform_int_distribution, uniform_real_distribution
 #include <set>
 #include <string>
@@ -13,6 +13,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <boost/geometry.hpp>
 
+#include "config.hpp"
 #include "object.hpp"
 
 class Action;
@@ -90,6 +91,7 @@ class World {
             timeout,
             verbose
         ;
+        Config config;
         int
             timeLimit
         ;
@@ -124,7 +126,6 @@ class World {
         std::map<std::string, SDL_Texture *> textures;
         std::uniform_int_distribution<unsigned int> uniformUintDistribution;
         std::uniform_real_distribution<> uniformDoubleDistribution;
-        std::unique_ptr<std::map<std::string,std::string>> config;
 
         // Methods.
         void createImageTexture(
@@ -168,7 +169,6 @@ class World {
         /// Don't change it otherwise.
         /// Return true iff an object is present at that position.
         bool findObjectAtTile(Object **object, unsigned int x, unsigned int y) const;
-        double getConfigDouble(std::string key, double default_);
         unsigned int getNextFreeObjectId();
         /// Should we only show the FOV for a single object on screen? Or show every object?
         bool getShowFov() const;
