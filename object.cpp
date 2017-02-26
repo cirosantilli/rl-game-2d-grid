@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include "actor.hpp"
+#include "do_nothing_actor.hpp"
 #include "do_nothing_drawable_object.hpp"
 #include "drawable_object.hpp"
 #include "object.hpp"
@@ -27,18 +28,9 @@ Object::Object(
 Object::Object(
     unsigned int x,
     unsigned int y,
-    Type type,
-    std::unique_ptr<Actor> actor,
-    unsigned int fov
+    Type type
 ) :
-    actor(std::move(actor)),
-    drawableObject(nullptr),
-    type(type),
-    score(0),
-    fov(fov),
-    id(0),
-    x(x),
-    y(y)
+    Object(x, y, type, std::make_unique<DoNothingActor>())
 {}
 Object::~Object() {}
 void Object::draw(const World& world, int cameraX, int cameraY) const {

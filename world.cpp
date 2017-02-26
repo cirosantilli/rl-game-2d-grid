@@ -27,6 +27,7 @@
 #include "fruit_object.hpp"
 #include "random_actor.hpp"
 #include "single_texture_drawable_object.hpp"
+#include "teleport_object.hpp"
 #include "utils.hpp"
 #include "world.hpp"
 #include "world_view.hpp"
@@ -327,8 +328,6 @@ void World::init(bool reuseRandomSeed) {
         }
         this->tileWidthPix = this->windowWidthPix / fovWidth;
         this->tileHeightPix = this->windowHeightPix / fovHeight;
-        //this->createSolidTexture("fruit", 0.0, 1.0, 0.0);
-        //this->createImageTexture("fruit", "apple.png");
         this->createImageTextureBlitColor("eater", "rabbit.png", 1.0, 1.0, 1.0);
         this->createImageTextureBlitColor("human", "rabbit.png", 0.0, 0.0, 1.0);
         this->createImageTextureBlitColor("fruit", "apple.png", 1.0, 0.0, 0.0);
@@ -336,6 +335,7 @@ void World::init(bool reuseRandomSeed) {
         this->createImageTextureBlitColor("bad_fruit", "apple.png", 0.6, 0.4, 0.1);
         this->createImageTextureBlitColor("great_fruit", "apple.png", 1.0, 1.0, 0.0);
         this->createImageTextureBlitColor("tree", "tree.png", 0.0, 1.0, 0.0);
+        this->createImageTextureBlitColor("teleport", "teleport.png", 0.8, 0.0, 0.4);
     }
 
     if (this->scenario == "empty") {
@@ -383,13 +383,29 @@ void World::init(bool reuseRandomSeed) {
             "human"
         );
         this->createSingleTextureObject(
-            std::make_unique<FruitObject>(
-                14,
-                10,
-                std::make_unique<DoNothingActor>()
-            ),
+            std::make_unique<FruitObject>(14, 10),
             "fruit"
         );
+    } else if (this->scenario == "teleport") {
+        this->createSingleTextureObject(
+            std::make_unique<Object>(
+                10,
+                10,
+                Object::Type::FRUIT_EATER,
+                std::make_unique<HumanActor>(),
+                fov
+            ),
+            "human"
+        );
+        auto tp1 = std::make_unique<TeleportObject>(8, 10);
+        auto tp2 = std::make_unique<TeleportObject>(12, 10, tp1.get());
+        auto tp3 = std::make_unique<TeleportObject>(12, 9, tp1.get());
+        tp1->setDestination(tp2.get());
+        this->createSingleTextureObject(std::move(tp1), "teleport");
+        this->createSingleTextureObject(std::move(tp2), "teleport");
+        this->createSingleTextureObject(std::move(tp3), "teleport");
+        this->createSingleTextureObject(std::make_unique<FruitObject>(13, 10), "fruit");
+        this->createSingleTextureObject(std::make_unique<Object>(12, 11, Object::Type::WALL), "wall");
     } else {
         // Walls closing off the scenario borders.
         for (unsigned int y = 0; y < this->height; ++y) {
@@ -547,7 +563,7 @@ void World::init(bool reuseRandomSeed) {
                     this->config.getConfigDouble("frac-great-fruit", 0.0002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>(), 5),
+                            std::make_unique<FruitObject>(x, y, 5),
                             "great_fruit"
                         );
                     }
@@ -556,7 +572,7 @@ void World::init(bool reuseRandomSeed) {
                     this->config.getConfigDouble("frac-great-fruit", 0.002),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>(), -1),
+                            std::make_unique<FruitObject>(x, y, -1),
                             "bad_fruit"
                         );
                     }
@@ -565,7 +581,7 @@ void World::init(bool reuseRandomSeed) {
                     this->config.getConfigDouble("frac-fruit", 0.01),
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
-                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>()),
+                            std::make_unique<FruitObject>(x, y),
                             "fruit"
                         );
                     }
@@ -592,6 +608,19 @@ void World::init(bool reuseRandomSeed) {
                             this->createSingleTextureObject(
                                 std::make_unique<Object>(x, y, Object::Type::TREE, std::make_unique<DoNothingActor>(), 0),
                                 "tree"
+                            );
+                        }
+                    }
+                },
+                {
+                    this->config.getConfigDouble("frac-teleport", 0.001),
+                    [&](unsigned int x, unsigned int y){
+                        auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
+                        auto end = monumentRtree.qend();
+                        if (it == end) {
+                            this->createSingleTextureObject(
+                                std::make_unique<Object>(x, y, Object::Type::TELEPORT, std::make_unique<DoNothingActor>(), 0),
+                                "teleport"
                             );
                         }
                     }
@@ -658,28 +687,45 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                     action = actor.act(*createWorldView(*object));
                 }
 
-                auto x = object->getX();
-                auto y = object->getY();
+                auto oldX = object->getX();
+                auto oldY = object->getY();
+                decltype(oldX) x = oldX;
+                decltype(oldY) y = oldY;
 
                 // X
                 if (action.getMoveX() == Action::MoveX::LEFT) {
                     if (x > 0) {
-                        x--;
+                        x = oldX - 1;
                     }
                 } else if (action.getMoveX() == Action::MoveX::RIGHT) {
                     if (x < this->getWidth() - 1) {
-                        x++;
+                        x = oldX + 1;
                     }
                 }
 
                 // Y
-                if (action.getMoveY() == Action::MoveY::UP) {
+                if (action.getMoveY() == Action::MoveY::DOWN) {
                     if (y < this->getHeight() - 1) {
-                        y++;
+                        y = oldY - 1;
                     }
-                } else if (action.getMoveY() == Action::MoveY::DOWN) {
+                } else if (action.getMoveY() == Action::MoveY::UP) {
                     if (y > 0) {
-                        y--;
+                        y = oldY + 1;
+                    }
+                }
+
+                // Teleport.
+                {
+                    Object *objectAtTarget;
+                    bool targetNonEmpty = this->findObjectAtTile(&objectAtTarget, x, y);
+                    if (targetNonEmpty) {
+                        auto targetType = objectAtTarget->getType();
+                        if (targetType == Object::Type::TELEPORT) {
+                            auto teleportObjectAtTarget = static_cast<TeleportObject*>(objectAtTarget);
+                            auto dest = teleportObjectAtTarget->getDestination();
+                            x = dest->getX() + (x - oldX);
+                            y = dest->getY() + (y - oldY);
+                        }
                     }
                 }
 
@@ -709,7 +755,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                         for (unsigned int xfruit = std::max((int)x - (int)tree_radius, 0); xfruit <= std::min(x + tree_radius, this->width - 1); ++xfruit) {
                             if (this->randDouble() < this->config.treeFracFruitSpawn && this->isTileEmpty(xfruit, yfruit)) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<FruitObject>(xfruit, yfruit, std::make_unique<DoNothingActor>()),
+                                    std::make_unique<FruitObject>(xfruit, yfruit),
                                     "fruit"
                                 );
                             }
@@ -729,7 +775,7 @@ void World::update(const std::vector<std::unique_ptr<Action>>& humanActions) {
                         (this->randDouble() < this->config.fracFruitSpawn)
                     ) {
                         this->createSingleTextureObject(
-                            std::make_unique<FruitObject>(x, y, std::make_unique<DoNothingActor>()),
+                            std::make_unique<FruitObject>(x, y),
                             "fruit"
                         );
                     }
@@ -939,12 +985,12 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
     return std::make_unique<WorldView>(object.getFov(), object.getFov(), std::move(objectViews), object.getScore());
 }
 
-void World::addObject(std::unique_ptr<Object>&& object) {
+World::objects_t::iterator World::addObject(std::unique_ptr<Object>&& object) {
     this->rtree.insert(object.get());
-    this->objects.insert(std::move(object));
+    return this->objects.insert(std::move(object)).first;
 }
 
-void World::createSingleTextureObject(
+World::objects_t::iterator World::createSingleTextureObject(
     std::unique_ptr<Object>&& object,
     std::string textureId
 ) {
@@ -964,7 +1010,7 @@ void World::createSingleTextureObject(
     if (object->getActor().takesHumanAction()) {
         this->nHumanActions++;
     }
-    this->addObject(std::move(object));
+    return this->addObject(std::move(object));
 }
 
 void World::deleteObject(Object *object) {

@@ -6,16 +6,9 @@
 FruitObject::FruitObject(
     unsigned int x,
     unsigned int y,
-    std::unique_ptr<Actor> actor,
     unsigned int value
 ) :
-    Object(
-        x,
-        y,
-        Type::FRUIT,
-        std::move(actor),
-        0
-    ),
+    Object(x, y, Type::FRUIT),
     value(value)
 {}
 

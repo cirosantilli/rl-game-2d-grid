@@ -8,7 +8,6 @@ class FruitObject : public Object {
         FruitObject(
             unsigned int x,
             unsigned int y,
-            std::unique_ptr<Actor> actor,
             unsigned int value = 1
         );
         // How much this fruit is worth to eater.

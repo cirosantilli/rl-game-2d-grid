@@ -24,6 +24,7 @@ class Object {
             FRUIT,
             FRUIT_EATER,
             TREE,
+            TELEPORT,
         };
         Object();
         virtual ~Object();
@@ -32,16 +33,14 @@ class Object {
             unsigned int y,
             Type type,
             std::unique_ptr<Actor> actor,
-            unsigned int fov,
-            std::unique_ptr<DrawableObject> drawableObject,
-            unsigned int id
+            unsigned int fov = 0,
+            std::unique_ptr<DrawableObject> drawableObject = nullptr,
+            unsigned int id = 0
         );
         Object(
             unsigned int x,
             unsigned int y,
-            Type type,
-            std::unique_ptr<Actor> actor,
-            unsigned int fov
+            Type type
         );
         void draw(const World& world, int cameraX = 0, int cameraY = 0) const;
         Actor& getActor() const;

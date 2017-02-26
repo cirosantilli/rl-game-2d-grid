@@ -159,8 +159,8 @@ class World {
         std::unique_ptr<WorldView> createWorldView(const Object &object) const;
         /// Should always be used for object creation instead of raw insertion into data types,
         /// ince a single insertion may require multiple index updates.
-        void addObject(std::unique_ptr<Object>&& object);
-        void createSingleTextureObject(
+        objects_t::iterator addObject(std::unique_ptr<Object>&& object);
+        objects_t::iterator createSingleTextureObject(
             std::unique_ptr<Object>&& object,
             std::string textureId
         );

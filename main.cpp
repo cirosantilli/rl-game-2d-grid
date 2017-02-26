@@ -161,6 +161,7 @@ int main(int argc, char **argv) {
                 randomSeedGiven = true;
             } else if (std::strcmp(argv[i], "-s") == 0) {
                 scenario = argv[i + 1];
+                i++;
             } else if (std::strcmp(argv[i], "-t") == 0) {
                 timeLimit = std::strtol(argv[i + 1], NULL, 10);
                 i++;
