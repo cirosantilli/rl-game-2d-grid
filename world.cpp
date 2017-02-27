@@ -517,6 +517,7 @@ void World::init(bool reuseRandomSeed) {
 
         // Other objects.
         {
+            std::vector<TeleportObject*> teleports;
             typedef std::pair<double, std::function<void(unsigned int, unsigned int)>> P;
             auto p = std::vector<P> {
                 {
@@ -603,15 +604,14 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-teleport", 0.001),
+                    this->config.fracTeleport,
                     [&](unsigned int x, unsigned int y){
                         auto it = monumentRtree.qbegin(bgi::intersects(MonumentPoint(x, y)));
                         auto end = monumentRtree.qend();
                         if (it == end) {
-                            this->createSingleTextureObject(
-                                std::make_unique<Object>(x, y, Object::Type::TELEPORT),
-                                "teleport"
-                            );
+                            auto tp = std::make_unique<TeleportObject>(x, y);
+                            teleports.push_back(tp.get());
+                            this->createSingleTextureObject(std::move(tp), "teleport");
                         }
                     }
                 },
@@ -631,6 +631,31 @@ void World::init(bool reuseRandomSeed) {
                     if (this->isTileEmpty(x, y)) {
                         cumulative.lower_bound(this->randDouble())->second(x, y);
                     }
+                }
+            }
+
+            // Pair teleports up.
+            // http://stackoverflow.com/questions/9218724/get-random-element-and-remove-it
+            {
+                auto size = teleports.size();
+                while (size >= 2) {
+                    auto idx = this->randUint() % size;
+                    auto tp1 = teleports[idx];
+                    std::swap(teleports[idx], teleports.back());
+                    teleports.pop_back();
+                    size--;
+
+                    idx = this->randUint() % size;
+                    auto tp2 = teleports[idx];
+                    std::swap(teleports[idx], teleports.back());
+                    teleports.pop_back();
+                    size--;
+
+                    tp1->setDestination(tp2);
+                    tp2->setDestination(tp1);
+                }
+                if (size == 1) {
+                    this->deleteObject(teleports.back());
                 }
             }
         }

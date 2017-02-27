@@ -12,20 +12,31 @@ class World;
 
 class Object {
     public:
+
+// http://stackoverflow.com/questions/9907160/how-to-convert-enum-names-to-string-in-c
+#define OBJECT_TYPE_FOREACH(F) \
+        F(DO_NOTHING) \
+        F(MOVE_UP) \
+        F(MOVE_DOWN) \
+        F(RANDOM) \
+        F(FOLLOW_HUMAN) \
+        F(FLEE_HUMAN) \
+        F(HUMAN) \
+        F(WALL) \
+        F(FRUIT) \
+        F(FRUIT_EATER) \
+        F(TREE) \
+        F(TELEPORT) \
+
+#define ENUM_DEF(X) X,
+#define CASE_COUT(x) \
+    case Object::Type::x: \
+        os << #x; \
+    break;
         enum class Type {
-            DO_NOTHING,
-            MOVE_UP,
-            MOVE_DOWN,
-            RANDOM,
-            FOLLOW_HUMAN,
-            FLEE_HUMAN,
-            HUMAN,
-            WALL,
-            FRUIT,
-            FRUIT_EATER,
-            TREE,
-            TELEPORT,
+            OBJECT_TYPE_FOREACH(ENUM_DEF)
         };
+
         Object();
         virtual ~Object();
         Object(

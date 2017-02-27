@@ -70,39 +70,7 @@ std::ostream& operator<<(std::ostream& os, const Object& o) {
 
 std::ostream& operator<<(std::ostream& os, const Object::Type& t) {
     switch (t) {
-        case Object::Type::DO_NOTHING:
-            os << "DO_NOTHING";
-        break;
-        case Object::Type::MOVE_UP:
-            os << "MOVE_UP";
-        break;
-        case Object::Type::MOVE_DOWN:
-            os << "MOVE_DOWN";
-        break;
-        case Object::Type::RANDOM:
-            os << "RANDOM";
-        break;
-        case Object::Type::FOLLOW_HUMAN:
-            os << "FOLLOW_HUMAN";
-        break;
-        case Object::Type::FLEE_HUMAN:
-            os << "FLEE_HUMAN";
-        break;
-        case Object::Type::HUMAN:
-            os << "HUMAN";
-        break;
-        case Object::Type::WALL:
-            os << "WALL";
-        break;
-        case Object::Type::FRUIT:
-            os << "FRUIT";
-        break;
-        case Object::Type::FRUIT_EATER:
-            os << "FRUIT_EATER";
-        break;
-        default:
-            assert(false);
-        break;
+        OBJECT_TYPE_FOREACH(CASE_COUT)
     }
     return os;
 }

@@ -12,6 +12,7 @@ class Config {
         /// not neededd for configs that are only used once at startup.
         double getConfigDouble(std::string key, double default_);
         double fracFruitSpawn;
+        double fracTeleport;
         double treeFracFruitSpawn;
     private:
         std::unique_ptr<std::map<std::string, std::string>> config;
