@@ -362,14 +362,7 @@ void World::init(bool reuseRandomSeed) {
             "human"
         );
         this->createSingleTextureObject(
-            std::make_unique<Object>(
-                10,
-                11,
-                Object::Type::WALL,
-                std::make_unique<DoNothingActor>(),
-                0
-            ),
-            "wall"
+            std::make_unique<Object>(10, 11, Object::Type::WALL), "wall"
         );
     } else if (this->scenario == "fruit") {
         this->createSingleTextureObject(
@@ -382,10 +375,7 @@ void World::init(bool reuseRandomSeed) {
             ),
             "human"
         );
-        this->createSingleTextureObject(
-            std::make_unique<FruitObject>(14, 10),
-            "fruit"
-        );
+        this->createSingleTextureObject(std::make_unique<FruitObject>(14, 10), "fruit");
     } else if (this->scenario == "teleport") {
         this->createSingleTextureObject(
             std::make_unique<Object>(
@@ -410,21 +400,21 @@ void World::init(bool reuseRandomSeed) {
         // Walls closing off the scenario borders.
         for (unsigned int y = 0; y < this->height; ++y) {
             this->createSingleTextureObject(
-                std::make_unique<Object>(0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                std::make_unique<Object>(0, y, Object::Type::WALL),
                 "wall"
             );
             this->createSingleTextureObject(
-                std::make_unique<Object>(this->width - 1, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                std::make_unique<Object>(this->width - 1, y, Object::Type::WALL),
                 "wall"
             );
         }
         for (unsigned int x = 0; x < this->width; ++x) {
             this->createSingleTextureObject(
-                std::make_unique<Object>(x, 0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                std::make_unique<Object>(x, 0, Object::Type::WALL),
                 "wall"
             );
             this->createSingleTextureObject(
-                std::make_unique<Object>(x, this->height - 1, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                std::make_unique<Object>(x, this->height - 1, Object::Type::WALL),
                 "wall"
             );
         }
@@ -470,13 +460,13 @@ void World::init(bool reuseRandomSeed) {
                         for (auto y = y0; y <= ymax; ++y) {
                             if (door_side != 0 || y != door_pos) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<Object>(x0, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    std::make_unique<Object>(x0, y, Object::Type::WALL),
                                     "wall"
                                 );
                             }
                             if (door_side != 1 || y != door_pos) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<Object>(xmax, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    std::make_unique<Object>(xmax, y, Object::Type::WALL),
                                     "wall"
                                 );
                             }
@@ -484,13 +474,13 @@ void World::init(bool reuseRandomSeed) {
                         for (auto x = x0 + 1; x <= xmax - 1; ++x) {
                             if (door_side != 2 || x != door_pos) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<Object>(x, y0, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    std::make_unique<Object>(x, y0, Object::Type::WALL),
                                     "wall"
                                 );
                             }
                             if (door_side != 3 || x != door_pos) {
                                 this->createSingleTextureObject(
-                                    std::make_unique<Object>(x, ymax, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                    std::make_unique<Object>(x, ymax, Object::Type::WALL),
                                     "wall"
                                 );
                             }
@@ -593,7 +583,7 @@ void World::init(bool reuseRandomSeed) {
                         auto end = monumentRtree.qend();
                         if (it == end) {
                             this->createSingleTextureObject(
-                                std::make_unique<Object>(x, y, Object::Type::WALL, std::make_unique<DoNothingActor>(), 0),
+                                std::make_unique<Object>(x, y, Object::Type::WALL),
                                 "wall"
                             );
                         }
@@ -606,7 +596,7 @@ void World::init(bool reuseRandomSeed) {
                         auto end = monumentRtree.qend();
                         if (it == end) {
                             this->createSingleTextureObject(
-                                std::make_unique<Object>(x, y, Object::Type::TREE, std::make_unique<DoNothingActor>(), 0),
+                                std::make_unique<Object>(x, y, Object::Type::TREE),
                                 "tree"
                             );
                         }
@@ -619,7 +609,7 @@ void World::init(bool reuseRandomSeed) {
                         auto end = monumentRtree.qend();
                         if (it == end) {
                             this->createSingleTextureObject(
-                                std::make_unique<Object>(x, y, Object::Type::TELEPORT, std::make_unique<DoNothingActor>(), 0),
+                                std::make_unique<Object>(x, y, Object::Type::TELEPORT),
                                 "teleport"
                             );
                         }
