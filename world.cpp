@@ -38,8 +38,6 @@ World::World(
     bool display,
     unsigned int windowWidthPix,
     unsigned int windowHeightPix,
-    unsigned int showPlayerId,
-    bool showFov,
     bool randomSeedGiven,
     int randomSeed,
     unsigned int nHumanPlayers,
@@ -53,7 +51,6 @@ World::World(
     std::unique_ptr<std::map<std::string,std::string>> config
 ) :
     display(display),
-    showFov(showFov),
     spawn(spawn),
     verbose(verbose),
     config(std::move(config)),
@@ -62,7 +59,6 @@ World::World(
     height(height),
     nHumanPlayersInitial(nHumanPlayers),
     randomSeed(randomSeed),
-    showPlayerId(showPlayerId),
     width(width),
     windowHeightPix(windowHeightPix),
     windowWidthPix(windowWidthPix)
@@ -147,7 +143,7 @@ void World::draw() const {
     if (this->display) {
         SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 0);
         SDL_RenderClear(this->renderer);
-        auto const& showObject = **(this->objects.find(this->showPlayerId));
+        auto const& showObject = **(this->objects.find(this->showFovIdFilter));
         auto worldView = createWorldView(showObject);
         auto const& showObjectScore = worldView->getScore();
         if (this->menuMode) {
@@ -216,7 +212,7 @@ void World::draw() const {
                 }
             }
         } else {
-            if (this->getShowFov()) {
+            if (this->config.showFovIdGiven) {
                 auto cameraX = showObject.getX() - showObject.getFov() + 1;
                 auto cameraY = showObject.getY() - showObject.getFov() + 1;
                 // TODO: loop over existing world view here,
@@ -317,7 +313,7 @@ void World::init(bool reuseRandomSeed) {
     if (this->display) {
         unsigned int fovWidth = 0;
         unsigned int fovHeight = 0;
-        if (this->getShowFov()) {
+        if (this->config.showFovIdGiven) {
             fovWidth = 2 * fov - 1;
             fovHeight = fovWidth;
             this->viewHeight = fovHeight;
@@ -634,6 +630,22 @@ void World::init(bool reuseRandomSeed) {
                 }
             }
 
+            // Filter showFovId by actor type if one was given.
+            {
+                auto showFovId = this->config.showFovId;
+                if (this->config.showFovActorGiven) {
+                    auto pair = this->actorIndex.find(config.showFovActor);
+                    if (pair == this->actorIndex.end())
+                        throw std::runtime_error(std::string("no such actor: ") + config.showFovActor);
+                    auto objects = pair->second;
+                    if (showFovId >= objects.size())
+                        throw std::runtime_error(std::string("object id too high: ") + std::to_string(showFovId));
+                    this->showFovIdFilter = (*std::next(objects.begin(), showFovId))->getId();
+                } else {
+                    this->showFovIdFilter = showFovId;
+                }
+            }
+
             // Pair teleports up.
             // http://stackoverflow.com/questions/9218724/get-random-element-and-remove-it
             {
@@ -679,6 +691,7 @@ void World::quit() {
 // Resets everything, except the main window which stays open.
 void World::reset(bool reuseRandomSeed) {
     this->rtree.clear();
+    this->actorIndex.clear();
     this->objects.clear();
     this->destroyTextures();
     this->init(reuseRandomSeed);
@@ -822,8 +835,6 @@ unsigned int World::getTileHeightPix() const { return this->tileHeightPix; }
 unsigned int World::getTileWidthPix() const { return this->tileWidthPix; }
 unsigned int World::getWidth() const { return this->width; }
 unsigned int World::getViewHeight() const { return this->viewHeight; }
-
-bool World::getShowFov() const { return this->showFov; }
 
 bool World::needFpsUpdate() const {
     return this->verbose || this->display;
@@ -1001,7 +1012,9 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
 }
 
 World::objects_t::iterator World::addObject(std::unique_ptr<Object>&& object) {
-    this->rtree.insert(object.get());
+    auto objPtr = object.get();
+    this->rtree.insert(objPtr);
+    this->actorIndex[objPtr->getActor().getTypeStr()].insert(objPtr);
     return this->objects.insert(std::move(object)).first;
 }
 
@@ -1030,6 +1043,7 @@ World::objects_t::iterator World::createSingleTextureObject(
 
 void World::deleteObject(Object *object) {
     assert(this->rtree.remove(object) == 1);
+    assert(this->actorIndex[object->getActor().getTypeStr()].erase(object));
     this->objects.erase(this->objects.find(object->getId()));
 }
 void World::updatePosition(Object& object, unsigned int x, unsigned int y) {

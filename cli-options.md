@@ -65,8 +65,11 @@
 -   `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way
     to show scenario list here. For now read source.
 
--   `-v <int>`: (View player) Only show what the int-th player is able to
+-   `-showFovId <int>`: (View object) Only show what the `int`-th object is able to
     observe.
+
+    If `-showFovActor` is given, then `int` refers to the `int`-th object that
+    is controlled by an actor of the given type.
 
     This notably limits the field of view of the player, but also includes for
     which player the HUD is about (e.g. score).

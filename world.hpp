@@ -33,8 +33,6 @@ class World {
             bool display,
             unsigned int windowWidthPix,
             unsigned int windowHeightPix,
-            unsigned int showPlayerId,
-            bool showFov,
             bool randomSeedGiven,
             int randomSeed,
             unsigned int nHumanPlayers,
@@ -85,7 +83,6 @@ class World {
             display,
             userQuit,
             menuMode,
-            showFov,
             skipUpdateOnce,
             spawn,
             timeout,
@@ -108,7 +105,7 @@ class World {
             // Not affected by human players that died.
             nHumanPlayersInitial,
             randomSeed,
-            showPlayerId,
+            showFovIdFilter,
             text_margin_y,
             ticks,
             tileHeightPix,
@@ -124,6 +121,7 @@ class World {
         TTF_Font *font;
         objects_t objects;
         std::map<std::string, SDL_Texture *> textures;
+        std::map<std::string, std::set<Object*>> actorIndex;
         std::uniform_int_distribution<unsigned int> uniformUintDistribution;
         std::uniform_real_distribution<> uniformDoubleDistribution;
 
@@ -170,8 +168,6 @@ class World {
         /// Return true iff an object is present at that position.
         bool findObjectAtTile(Object **object, unsigned int x, unsigned int y) const;
         unsigned int getNextFreeObjectId();
-        /// Should we only show the FOV for a single object on screen? Or show every object?
-        bool getShowFov() const;
         /// Check if a given tile is empty.
         bool isTileEmpty(unsigned int x, unsigned int y) const;
         bool needFpsUpdate() const;

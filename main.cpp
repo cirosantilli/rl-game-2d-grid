@@ -96,7 +96,6 @@ int main(int argc, char **argv) {
         holdKey = false,
         immediateAction = true,
         limitFps = false,
-        showFov = false,
         spawn = true,
         windowPosGiven = false,
         verbose = false
@@ -110,7 +109,6 @@ int main(int argc, char **argv) {
     unsigned int
         nHumanPlayers = 1,
         randomSeed = 0,
-        showPlayerId = 0,
         width = 20,
         windowPosX = 0,
         windowPosY = 0,
@@ -119,6 +117,8 @@ int main(int argc, char **argv) {
     // Random config CLI options, because lazy to create variables / docs
     // for all of them. Mostly world parameters used only once at world creation time,
     // because recompilation is too slow, and you must play around with those a lot.
+    //
+    // All configs should be eventually migrated to that method.
     auto config = std::make_unique<std::map<std::string,std::string>>();
 
     // Treat CLI arguments.
@@ -143,10 +143,6 @@ int main(int argc, char **argv) {
                 windowPosX = std::strtol(argv[i + 1], NULL, 10);
                 windowPosY = std::strtol(argv[i + 2], NULL, 10);
                 i += 2;
-            } else if (std::strcmp(argv[i], "-v") == 0) {
-                showPlayerId = std::strtol(argv[i + 1], NULL, 10);
-                i++;
-                showFov = true;
             } else if (std::strcmp(argv[i], "-W") == 0) {
                 windowWidthPix = std::strtol(argv[i + 1], NULL, 10);
                 i++;
@@ -177,13 +173,14 @@ int main(int argc, char **argv) {
                 spawn = !spawn;
             } else if (std::strcmp(argv[i], "-V") == 0) {
                 verbose = !verbose;
+
             } else {
-                printHelp();
-                std::exit(EXIT_FAILURE);
+                config->emplace(&argv[i][1], argv[i+1]);
+                i++;
             }
         } else {
-            config->emplace(argv[i], argv[i+1]);
-            i++;
+            printHelp();
+            std::exit(EXIT_FAILURE);
         }
     }
     auto windowHeightPix = windowWidthPix;
@@ -199,8 +196,6 @@ int main(int argc, char **argv) {
         display,
         windowWidthPix,
         windowHeightPix,
-        showPlayerId,
-        showFov,
         randomSeedGiven,
         randomSeed,
         nHumanPlayers,

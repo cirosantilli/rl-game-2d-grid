@@ -2,7 +2,7 @@
 
 ## Rogue mode
 
-    ./main.out -v 0 -W 550
+    ./main.out -showFovActor HumanActor -showFovId 0 -W 550
 
 Here 550 assumes that the FOV is 5, which requires:
 
@@ -22,7 +22,7 @@ Impossible is there are so many tiles that each tile is smaller than a pixel.
 
 ## Non-interactive simulation
 
-    ./main.out -t 10 -p 0 -d
+    ./main.out -d -t 100 -p 0 -V
 
 Let your AIs battle it out for 10 ticks, print all scores to stdout, and quit.
 

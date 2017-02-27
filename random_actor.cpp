@@ -16,8 +16,8 @@ Action RandomActor::act(const WorldView&) {
         case 1:
             x = Action::MoveX::LEFT;
         break;
-            x = Action::MoveX::RIGHT;
         case 2:
+            x = Action::MoveX::RIGHT;
         break;
     }
     switch (this->uniformUintDistribution(this->prng) % 3) {
@@ -26,8 +26,8 @@ Action RandomActor::act(const WorldView&) {
         case 1:
             y = Action::MoveY::DOWN;
         break;
-            y = Action::MoveY::UP;
         case 2:
+            y = Action::MoveY::UP;
         break;
     }
     return Action(x, y);

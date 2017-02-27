@@ -73,9 +73,11 @@ class Object {
             // Value does not seem to matter, only presence, but std::true_type is a good choice semantically.
             typedef std::true_type is_transparent;
             typedef std::unique_ptr<Object> T;
-            bool operator()(const T& c, unsigned int id) const;
-            bool operator()(unsigned int id, const T& c) const;
-            bool operator()(const T& lhs, const T& rhs) const;
+            bool operator()(const T& l, unsigned int r) const;
+            bool operator()(unsigned int l, const T& r) const;
+            bool operator()(const T& l, const Object *r) const;
+            bool operator()(const Object *l, const T& r) const;
+            bool operator()(const T& l, const T& r) const;
         };
     protected:
         std::unique_ptr<Actor> actor;
