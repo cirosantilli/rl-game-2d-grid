@@ -32,7 +32,17 @@ class Config {
             showFovIdGiven
         ;
         double
+            /// Bad fruits can also be interpreted as a cost of effort:
+            /// wasting energy as you move on diffiult terrain.
+            ///
+            /// Bad fruits with hugely negative cost, are basically walls
+            /// that can be taken down with some effort.
+            fracBadFruit,
+            fracFruit,
+            fracFruitSkin,
             fracFruitSpawn,
+            fracGreatFruit,
+            fracRooms,
             fracTeleport,
             treeFracFruitSpawn
         ;

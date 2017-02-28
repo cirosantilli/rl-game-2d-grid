@@ -2,6 +2,9 @@
 
 ## Interactive play options
 
+-   `-a <string>`, `-showFovActor <string>`: only consider objects of the given
+    for the `-showFovId` option.
+
 -   `-b`: (Block) don't block on player input.
 
     If given, if he player does not give any input until before the current
@@ -14,15 +17,17 @@
 
     User input is only available with display.
 
-    If not present, simulation runs as faster as possible.
+    If not present, simulation runs as fast as possible.
+
+    Implies `-p 0`, since it is currently impossible to control players without a
+    display.
+
+-   `-f <double>`: (Fps) limit FPS to `double` FPS. Default: -1.0.
+
+    -1.0 means unlimited.
 
     Helps humans visualize non-interactive simulations that are too fast. E.g.
     `-f 2.0` limits simulation to 2 FPS.
-
-    Forces -p = 0, since it is currently impossible to control players without a
-    display.
-
--   `-f <double>`: (Fps) limit FPS to <double> FPS. Default: 1.0.
 
     You likely don't want this for interactive simulations that block on user
     input (Rogue-like), as this becomes lag.
@@ -60,15 +65,12 @@
     In particular, it becomes difficult to press multiple simultaneous keys
     consistently.
 
--   `-a <string>`, `-showFovActor <string>`: only consider objects of the given
-    for the `-showFovId` option.
-
 -   `-P <x> <y>`: initial Position of the game window in the screen at startup
 
--   `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way
+-   `-S <string>`: (Scenario) choose a named pre-built world scenario. TODO way
     to show scenario list here. For now read source.
 
--   `-v <int>`, `-showFovId <int>`: (View object) Only show what the `int`-th
+-   `-s <int>`, `-showFovId <int>`: (View object) Only show what the `int`-th
     object is able to observe.
 
     If `-showFovActor` is given, then `int` refers to the `int`-th object that

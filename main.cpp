@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     ;
     std::string scenario;
     double
-        targetFps = 1.0,
+        targetFps = -1.0,
         lastTime;
     ;
     int timeLimit = -1;
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
                 randomSeed = std::strtol(argv[i + 1], NULL, 10);
                 i++;
                 randomSeedGiven = true;
-            } else if (std::strcmp(argv[i], "-s") == 0) {
+            } else if (std::strcmp(argv[i], "-S") == 0) {
                 scenario = argv[i + 1];
                 i++;
             } else if (std::strcmp(argv[i], "-t") == 0) {
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
                 std::exit(EXIT_SUCCESS);
             } else if (std::strcmp(argv[i], "-S") == 0) {
                 spawn = !spawn;
-            } else if (std::strcmp(argv[i], "-V") == 0) {
+            } else if (std::strcmp(argv[i], "-v") == 0) {
                 verbose = !verbose;
 
             } else {

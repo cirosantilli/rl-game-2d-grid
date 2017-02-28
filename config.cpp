@@ -3,7 +3,12 @@
 Config::Config(std::unique_ptr<std::map<std::string, std::string>> config) :
     config(std::move(config))
 {
+    this->fracBadFruit = this->getConfigDouble("fracBadFruit", 0.05);
+    this->fracFruit = this->getConfigDouble("fracBadFruit", 0.02);
+    this->fracFruitSkin = this->getConfigDouble("fracFruitSkin", 0.002);
     this->fracFruitSpawn = this->getConfigDouble("fracFruitSpawn", 0.001);
+    this->fracGreatFruit = this->getConfigDouble("fracBadFruit", 0.002);
+    this->fracRooms = this->getConfigDouble("fracRooms", 0.01);
     this->fracTeleport = this->getConfigDouble("fracTeleport", 0.001);
     this->treeFracFruitSpawn = this->getConfigDouble("treeFracFruitSpawn", 0.005);
 

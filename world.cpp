@@ -426,6 +426,8 @@ void World::init(bool reuseRandomSeed) {
         MonumentRtree monumentRtree;
 
         // Retangular rooms with a single door entry.
+        // Have 1 empty tile margin to ensure door is not blocked.
+        // TODO: add some kind of prize in the inside, as it is hard to get to.
         {
             auto wmin = 5u;
             auto hmin = 5u;
@@ -433,7 +435,7 @@ void World::init(bool reuseRandomSeed) {
             if (wmin < this->width - 6 && wmin < this->height - 4) {
                 auto placed = 0u;
                 auto attempts = 0u;
-                auto max_placed = this->width * this->height / (density * density);
+                auto max_placed = this->config.fracRooms * this->width * this->height / ((wmin + density / 2.0) * (hmin + density / 2.0));
                 auto max_attempts = 2 * max_placed;
                 while(placed < max_placed && attempts < max_attempts) {
                     auto w = wmin + this->randUint() % (this->width / density);
@@ -478,6 +480,61 @@ void World::init(bool reuseRandomSeed) {
                                 this->createSingleTextureObject(
                                     std::make_unique<Object>(x, ymax, Object::Type::WALL),
                                     "wall"
+                                );
+                            }
+                        }
+                        monumentRtree.insert(monumentBox);
+                        placed++;
+                    }
+                    attempts++;
+                }
+            }
+        }
+
+        // Fruit skin.
+        // Square with bad fruits surrounding outside, and great fruits on inside.
+        {
+            auto w = 4u;
+            auto h = 4u;
+            if (w < this->width && h < this->height) {
+                auto placed = 0u;
+                auto attempts = 0u;
+                auto max_placed = config.fracFruitSkin * this->width * this->height / (w * h);
+                auto max_attempts = 2 * max_placed;
+                while(placed < max_placed && attempts < max_attempts) {
+                    auto x0 = 1 + this->randUint() % (this->width - w - 2);
+                    auto y0 = 1 + this->randUint() % (this->height - h - 2);
+                    auto xmax = x0 + w - 1;
+                    auto ymax = y0 + h - 1;
+                    auto monumentBox = MonumentBox(MonumentPoint(x0, y0), MonumentPoint(xmax, ymax));
+                    auto it = monumentRtree.qbegin(bgi::intersects(monumentBox));
+                    auto end = monumentRtree.qend();
+                    if (it == end) {
+                        for (auto x = x0; x <= xmax; ++x) {
+                            this->createSingleTextureObject(
+                                std::make_unique<FruitObject>(x, y0, -1),
+                                "bad_fruit"
+                            );
+                            this->createSingleTextureObject(
+                                std::make_unique<FruitObject>(x, ymax, -1),
+                                "bad_fruit"
+                            );
+                        }
+                        for (auto y = y0 + 1; y < ymax; ++y) {
+                            this->createSingleTextureObject(
+                                std::make_unique<FruitObject>(x0, y, -1),
+                                "bad_fruit"
+                            );
+                            this->createSingleTextureObject(
+                                std::make_unique<FruitObject>(xmax, y, -1),
+                                "bad_fruit"
+                            );
+                        }
+                        for (auto y = y0 + 1; y < ymax; ++y) {
+                            for (auto x = x0 + 1; x < xmax; ++x) {
+                                this->createSingleTextureObject(
+                                    std::make_unique<FruitObject>(x, y, 5),
+                                    "great_fruit"
                                 );
                             }
                         }
@@ -547,7 +604,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-great-fruit", 0.0002),
+                    this->config.fracGreatFruit,
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<FruitObject>(x, y, 5),
@@ -556,7 +613,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-great-fruit", 0.002),
+                    this->config.fracBadFruit,
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<FruitObject>(x, y, -1),
@@ -565,7 +622,7 @@ void World::init(bool reuseRandomSeed) {
                     }
                 },
                 {
-                    this->config.getConfigDouble("frac-fruit", 0.01),
+                    this->config.fracFruit,
                     [&](unsigned int x, unsigned int y){
                         this->createSingleTextureObject(
                             std::make_unique<FruitObject>(x, y),

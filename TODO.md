@@ -15,13 +15,14 @@
 -   choose which players the human will control from the CLI, allow any player to be chosen by ID (currently only possible to choose which player to observe, not control)
 -   if the simulation is large, most keys get ignored. Why?
 -   save current world state. Hard, as it requires saving the entire actor state, so basically saving a program for later. We could require actors to implement a serialize method however...
--   ddef3b5523fbfca746e83bfc31758b2c71f0787a `-H` limits FPS to the default `1.0` if you hold a key like LEFT, but `-b -H` does not limit FPS. `-f -1.0` works as workaround, but options confusing. Either missing `-f` should always mean unlimited FPS, or `-f -1.0` should be required.
 
 ## Plant eater game
 
 -   toroidal world
     - https://en.wikipedia.org/wiki/Wraparound_(video_games)
     - semi achievable with current teleports (except vision does not cross them)
--   non-uniform spacial distributions of plants and plant eaters
 -   some condition where collaboration leads to victory vs desire to betray friends
+    - two players must stand on a tile at the same time for a door to open, filled with great fruits
 -   only spawn new plants next to existing ones. This would create agriculture logistics.
+-   Gaussian probability for tree fruit spawn
+-   doors and controlling buttons
