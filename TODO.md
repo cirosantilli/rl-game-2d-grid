@@ -19,7 +19,9 @@
 
 ## Plant eater game
 
--   toroidal world, or world with closed barriers (invisible walls are a hard mechanic for AI to grasp!)
+-   toroidal world
+    - https://en.wikipedia.org/wiki/Wraparound_(video_games)
+    - semi achievable with current teleports (except vision does not cross them)
 -   non-uniform spacial distributions of plants and plant eaters
 -   some condition where collaboration leads to victory vs desire to betray friends
 -   only spawn new plants next to existing ones. This would create agriculture logistics.

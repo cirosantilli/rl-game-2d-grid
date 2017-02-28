@@ -2,7 +2,7 @@
 
 ## Rogue mode
 
-    ./main.out -showFovActor HumanActor -showFovId 0 -W 550
+    ./main.out -a HumanActor -v 0 -W 550
 
 Here 550 assumes that the FOV is 5, which requires:
 

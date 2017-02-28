@@ -60,13 +60,16 @@
     In particular, it becomes difficult to press multiple simultaneous keys
     consistently.
 
+-   `-a <string>`, `-showFovActor <string>`: only consider objects of the given
+    for the `-showFovId` option.
+
 -   `-P <x> <y>`: initial Position of the game window in the screen at startup
 
 -   `-s <string>`: (Scenario) choose a named pre-built world scenario. TODO way
     to show scenario list here. For now read source.
 
--   `-showFovId <int>`: (View object) Only show what the `int`-th object is able to
-    observe.
+-   `-v <int>`, `-showFovId <int>`: (View object) Only show what the `int`-th
+    object is able to observe.
 
     If `-showFovActor` is given, then `int` refers to the `int`-th object that
     is controlled by an actor of the given type.
