@@ -5,6 +5,7 @@
 #include "do_nothing_drawable_object.hpp"
 #include "drawable_object.hpp"
 #include "object.hpp"
+#include "utils.hpp"
 
 Object::Object() : drawableObject(new DoNothingDrawableObject()) {}
 Object::Object(
@@ -73,7 +74,7 @@ std::ostream& operator<<(std::ostream& os, const Object& o) {
 
 std::ostream& operator<<(std::ostream& os, const Object::Type& t) {
     switch (t) {
-        OBJECT_TYPE_FOREACH(CASE_COUT)
+        OBJECT_TYPE_FOREACH(UTILS_CASE_COUT)
     }
     return os;
 }

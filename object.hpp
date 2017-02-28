@@ -6,6 +6,8 @@
 
 #include <boost/geometry.hpp>
 
+#include "utils.hpp"
+
 class Actor;
 class DrawableObject;
 class World;
@@ -28,13 +30,8 @@ class Object {
         F(TREE) \
         F(TELEPORT) \
 
-#define ENUM_DEF(X) X,
-#define CASE_COUT(x) \
-    case Object::Type::x: \
-        os << #x; \
-    break;
         enum class Type {
-            OBJECT_TYPE_FOREACH(ENUM_DEF)
+            OBJECT_TYPE_FOREACH(UTILS_COMMAFY)
         };
 
         Object();
