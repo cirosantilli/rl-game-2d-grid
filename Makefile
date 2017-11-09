@@ -19,6 +19,8 @@ RUN_BASENAME := $(RUN)$(OUT_EXT)
 
 .PHONY: assets-png assets-svg clean run
 
+all: $(RUN_BASENAME)
+
 $(RUN_BASENAME): $(OBJS)
 	$(CCC) -o '$@' $+ $(LIBS)
 

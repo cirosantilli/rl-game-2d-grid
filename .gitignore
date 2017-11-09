@@ -3,3 +3,10 @@
 *.o
 *.out
 core
+
+# Eclipse
+/.cproject
+/.project
+
+# CodeLite
+/general-game-ai.project

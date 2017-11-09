@@ -22,8 +22,17 @@ escaping from predators.
 
 Features:
 
--   insanely configurable human controls, ranging from TAS, rogue to ARPG,
--   simply via different command line options, for you to manually play games to
-    get a feeling for them, and build better AI later
+-   headless mode: game visualization is completely optional:
+    training can be done without any GUI as fast as the world simulation allows.
+
+    Note: at some point we might start adding games that use GPU render output,
+    then things will get [more complicated](https://stackoverflow.com/questions/3191978/how-to-use-glut-opengl-to-render-to-a-file/14324292#14324292).
+
+-   insanely configurable human controls types, ranging from TAS, to rogue-like,
+    to real time, simply via different command line options.
+
 -   clearly separated interfaces for world state consumed by actors (players),
-    and action given back
+    and action given back. In the future, this will allow to:
+
+    - prevent actors from cheating by reading extra world state
+    - sandbox actors to limit their resources

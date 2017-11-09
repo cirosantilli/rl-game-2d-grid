@@ -2,8 +2,8 @@
 
 ## Interactive play options
 
--   `-a <string>`, `-showFovActor <string>`: only consider objects of the given
-    for the `-showFovId` option.
+-   `-a <string>`, `-showFovActorType <string>`: only consider objects of the given
+    type for the `-showFovId` option.
 
 -   `-b`: (Block) don't block on player input.
 
@@ -70,22 +70,24 @@
 -   `-S <string>`: (Scenario) choose a named pre-built world scenario. TODO way
     to show scenario list here. For now read source.
 
--   `-s <int>`, `-showFovId <int>`: (View object) Only show what the `int`-th
-    object is able to observe.
+-   `-s <int>`, `-showFovId <int>`: Only show the Field Of Vision
+    for the `int`-th object, i.e., what the i-th object can see.
 
-    If `-showFovActor` is given, then `int` refers to the `int`-th object that
+    If not given, show a global world view. This means hat you are forced to use
+    this opion if the world is so large that each tile would be less than one pixel wide.
+
+    If `-showFovActorType` is given, then `int` refers to the `int`-th object that
     is controlled by an actor of the given type.
-
-    This notably limits the field of view of the player, but also includes for
-    which player the HUD is about (e.g. score).
-
-    You are forced to use this if the world is so large that each tile would be
-    less than one pixel wide.
 
     You do not need to be controlling the observed player: in particular if
     there are 0 players to be controlled by keyboard, you can just watch the
     action unroll by itself. You can also control one player while observing
     another, but you will likely go nuts.
+
+    This opion also determines which object will have its information shown on the HUD.
+    If neither `-s` nor `-a` is given, the HUD shows data for the first `HumanActor` object.
+
+    Default: 0
 
 -   `-W <int>`: (Width) window width in pixels. Square windows only. Must be
     divisible by the width of the world. Default: 500.

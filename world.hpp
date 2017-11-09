@@ -121,7 +121,8 @@ class World {
         TTF_Font *font;
         objects_t objects;
         std::map<std::string, SDL_Texture *> textures;
-        std::map<std::string, std::set<Object*>> actorIndex;
+        /// Actor type -> All objects with that actor type.
+        std::map<std::string, std::set<Object*>> actorTypeIndex;
         std::uniform_int_distribution<unsigned int> uniformUintDistribution;
         std::uniform_real_distribution<> uniformDoubleDistribution;
 

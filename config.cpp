@@ -11,10 +11,8 @@ Config::Config(std::unique_ptr<std::map<std::string, std::string>> config) :
     this->fracRooms = this->getConfigDouble("fracRooms", 0.01);
     this->fracTeleport = this->getConfigDouble("fracTeleport", 0.001);
     this->treeFracFruitSpawn = this->getConfigDouble("treeFracFruitSpawn", 0.005);
-
-    this->showFovActor = this->getConfigString(V{"a", "showFovActor"}, "HumanActor", this->showFovActorGiven);
-
-    this->showFovId = this->getConfigUint(V{"v", "showFovId"}, 0, this->showFovIdGiven);
+    this->showFovActorType = this->getConfigString(V{"a", "showFovActorType"}, "HumanActor", this->showFovActorTypeGiven);
+    this->showFovId = this->getConfigUint(V{"s", "showFovId"}, 0, this->showFovIdGiven);
 }
 
 double Config::getConfigDouble(std::string key, double default_) const {

@@ -249,6 +249,9 @@ void World::draw() const {
             SDL_Color color{World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX, World::COLOR_MAX};
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Score", this->font, &rect, &color);
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(showObjectScore).c_str(), this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, " ", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Cheats", this->font, &rect, &color);
+            World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, " ", this->font, &rect, &color);
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, "Time", this->font, &rect, &color);
             World::renderText(this->renderer, this->hud_text_x, rect.y + rect.h, std::to_string(this->ticks).c_str(), this->font, &rect, &color);
 
@@ -690,15 +693,22 @@ void World::init(bool reuseRandomSeed) {
             // Filter showFovId by actor type if one was given.
             {
                 auto showFovId = this->config.showFovId;
-                if (this->config.showFovActorGiven) {
-                    auto pair = this->actorIndex.find(config.showFovActor);
-                    if (pair == this->actorIndex.end())
-                        throw std::runtime_error(std::string("no such actor: ") + config.showFovActor);
-                    auto objects = pair->second;
-                    if (showFovId >= objects.size())
-                        throw std::runtime_error(std::string("object id too high: ") + std::to_string(showFovId));
-                    this->showFovIdFilter = (*std::next(objects.begin(), showFovId))->getId();
-                } else {
+                auto picked = false;
+                if (this->config.showFovActorTypeGiven || !this->config.showFovIdGiven) {
+                    auto pair = this->actorTypeIndex.find(config.showFovActorType);
+                    if (pair == this->actorTypeIndex.end()) {
+                        if (this->config.showFovIdGiven) {
+                            throw std::runtime_error(std::string("no such actor: ") + config.showFovActorType);
+                        }
+                    } else {
+                        auto objects = pair->second;
+                        if (showFovId >= objects.size())
+                            throw std::runtime_error(std::string("object id too high: ") + std::to_string(showFovId));
+                        this->showFovIdFilter = (*std::next(objects.begin(), showFovId))->getId();
+                        picked = true;
+                    }
+                }
+                if (!picked) {
                     this->showFovIdFilter = showFovId;
                 }
             }
@@ -748,7 +758,7 @@ void World::quit() {
 // Resets everything, except the main window which stays open.
 void World::reset(bool reuseRandomSeed) {
     this->rtree.clear();
-    this->actorIndex.clear();
+    this->actorTypeIndex.clear();
     this->objects.clear();
     this->destroyTextures();
     this->init(reuseRandomSeed);
@@ -1071,7 +1081,7 @@ std::unique_ptr<WorldView> World::createWorldView(const Object &object) const {
 World::objects_t::iterator World::addObject(std::unique_ptr<Object>&& object) {
     auto objPtr = object.get();
     this->rtree.insert(objPtr);
-    this->actorIndex[objPtr->getActor().getTypeStr()].insert(objPtr);
+    this->actorTypeIndex[objPtr->getActor().getTypeStr()].insert(objPtr);
     return this->objects.insert(std::move(object)).first;
 }
 
@@ -1100,7 +1110,7 @@ World::objects_t::iterator World::createSingleTextureObject(
 
 void World::deleteObject(Object *object) {
     assert(this->rtree.remove(object) == 1);
-    assert(this->actorIndex[object->getActor().getTypeStr()].erase(object));
+    assert(this->actorTypeIndex[object->getActor().getTypeStr()].erase(object));
     this->objects.erase(this->objects.find(object->getId()));
 }
 void World::updatePosition(Object& object, unsigned int x, unsigned int y) {

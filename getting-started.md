@@ -14,3 +14,7 @@ Production build with `gcc -O3 -g0`:
     make G=0 O=3
 
 Speedup due to `-O3` is dramatic (~10x).
+
+Run:
+
+    ./main.out

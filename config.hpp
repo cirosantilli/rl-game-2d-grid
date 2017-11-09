@@ -28,7 +28,7 @@ class Config {
         /// Public becase we are lazy to write code to preprocess all configs here:
         /// not neededd for configs that are only used once at startup.
         bool
-            showFovActorGiven,
+            showFovActorTypeGiven,
             showFovIdGiven
         ;
         double
@@ -46,7 +46,7 @@ class Config {
             fracTeleport,
             treeFracFruitSpawn
         ;
-        std::string showFovActor;
+        std::string showFovActorType;
         unsigned int showFovId;
     private:
         template<typename T>
