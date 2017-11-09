@@ -1,9 +1,7 @@
 # General Game AI
 
-Platform for a General Game AI competition
-<https://en.wikipedia.org/wiki/General_game_playing>
-
-Demo video: <https://youtu.be/TQ5k2u25eI8>
+Platform for a [General Game AI](https://en.wikipedia.org/wiki/General_game_playing)
+competition to test reinforcement learning algorithms. Demo video: <https://youtu.be/TQ5k2u25eI8>
 
 1. [**Getting started**](getting-started.md)
 1. [Rationale](rationale.md)

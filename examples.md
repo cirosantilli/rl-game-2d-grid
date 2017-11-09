@@ -1,24 +1,27 @@
 # Examples
 
-## Rogue-like mode all seeing
+## Rogue mode
 
     ./main.out
 
-The world only updates when the player hits a key, as in rogue-like games.
+The world only updates when the player hits a key, as in roguelike games.
 
-You cheat by being able to observe the entire world at once.
+You cheat by being able to observe the entire world at once, while actual bots
+can only see up to a certain distance around themselves.
 
-Impossible if there are so many tiles that each tile is smaller than a pixel.
+Cannot be used if there are so many tiles that each tile is smaller than a pixel.
 
-## Rogue mode
+## Rogue mode limited FOV
 
     ./main.out -a HumanActor -s 0 -W 550
 
-Here 550 assumes that the FOV is 5, which requires:
+Limit screen view to what agents can actually see.
+
+550 assumes that the FOV is 5, which requires:
 
     5 (left) + 1 (player itself) + 5 (right) = 11
 
-squares. And 550 is a multiple of 11 with of reasonable screen size.
+squares. And 550 is a multiple of 11 of reasonable screen size.
 
 ## Headless simulation
 
@@ -37,7 +40,7 @@ This is the major production training mode.
 
 Watch bots fight it out on the GUI, limit FPS to 2.
 
-## Rogue-like TAS mode
+## Rogue TAS
 
     ./main.out -i
 
