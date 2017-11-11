@@ -3,7 +3,7 @@
 O ?= 0
 G ?= gdb3
 STD ?= c++14
-CCC ?= g++ -MMD -g$(G) -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
+CCC ?= codelite-cc g++ -MMD -g$(G) -pedantic-errors -std=$(STD) -O$(O) -Wall -Werror -Wextra
 DEP_EXT ?= .d
 H_EXT ?= .hpp
 PH_EXT ?= .hpp.gch
