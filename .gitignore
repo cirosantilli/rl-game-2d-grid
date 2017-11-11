@@ -9,4 +9,6 @@ core
 /.project
 
 # CodeLite
+/.codelite/
 /general-game-ai.project
+/general-game-ai.workspace
